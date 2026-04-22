@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FolderId, NodeId, TargetId } from '@/shared/types'
-import { getNodeChildren, getTarget, isFolderId, isTargetId, searchCatalog } from '@/domain/catalog'
+import { getFolder, getNodeChildren, getTarget, isFolderId, isTargetId, searchCatalog } from '@/domain/catalog'
 import { useAppStore } from '@/popup/store'
 import { cn } from '@/shared/utils'
 import { openEditorForNode, openOptionsPage } from '@/shared/components'
@@ -113,7 +113,7 @@ function SearchPanel() {
 
 /* ── Compact target row ── */
 
-function TargetRow({ targetId }: { targetId: TargetId }) {
+function TargetRow({ targetId, showFolderColor }: { targetId: TargetId; showFolderColor?: boolean }) {
   const state = useAppStore((store) => store.state)
   const activateTarget = useAppStore((store) => store.activateTarget)
   const toggleFavorite = useAppStore((store) => store.toggleFavorite)
@@ -122,12 +122,16 @@ function TargetRow({ targetId }: { targetId: TargetId }) {
   if (!target) return null
 
   const isFavorite = state.usage.favoriteTargetIds.includes(targetId)
+  const folderColor = showFolderColor && target.parentId ? getFolder(state, target.parentId)?.color : undefined
 
   return (
     <button
       onClick={() => activateTarget(targetId)}
       className="group flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-zinc-800/80"
     >
+      {folderColor ? (
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: folderColor }} />
+      ) : null}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate text-[13px] text-zinc-200">{target.displayName}</span>
@@ -220,7 +224,7 @@ function FavoritesPanel() {
         <span className="text-[10px] text-zinc-700">{favorites.length}</span>
       </div>
       {favorites.map((targetId) => (
-        <TargetRow key={targetId} targetId={targetId} />
+        <TargetRow key={targetId} targetId={targetId} showFolderColor />
       ))}
     </section>
   )
@@ -237,7 +241,7 @@ function RecentsPanel() {
         <span className="text-[10px] text-zinc-700">{recents.length}</span>
       </div>
       {recents.map((targetId) => (
-        <TargetRow key={targetId} targetId={targetId} />
+        <TargetRow key={targetId} targetId={targetId} showFolderColor />
       ))}
     </section>
   )
