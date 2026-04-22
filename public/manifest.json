@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AWS Quick Switch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Quickly switch across deeply grouped AWS accounts and roles from a persistent hybrid tree + search popup.",
   "permissions": ["storage", "tabs"],
   "host_permissions": [
