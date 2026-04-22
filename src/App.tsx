@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { APP_NAME } from '@/shared/constants'
 import type { FolderId, NodeId, TargetId } from '@/shared/types'
 import { getNodeChildren, getTarget, getTargetPathLabel, isFolderId, isTargetId, searchCatalog } from '@/domain/catalog'
 import { useAppStore } from '@/popup/store'
 import { cn } from '@/shared/utils'
-import { ActionButton, Badge, SectionTitle, openEditorForNode, openOptionsPage } from '@/shared/components'
+import { Badge, SectionTitle, openEditorForNode, openOptionsPage } from '@/shared/components'
 import './index.css'
 
 /* ── Search ── */
@@ -25,7 +24,21 @@ function SearchPanel() {
 
   return (
     <section className="rounded-[28px] border border-white/10 bg-black/20 p-4 shadow-[0_20px_45px_-24px_rgba(0,0,0,0.6)] backdrop-blur">
-      <SectionTitle title="Quick Search" meta={results.length ? `${results.length} matches` : 'browse + search'} />
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">Quick Search</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">
+            {results.length ? `${results.length} matches` : 'browse + search'}
+          </span>
+          <button
+            onClick={openOptionsPage}
+            className="rounded-lg px-1.5 py-1 text-zinc-500 transition hover:bg-white/[0.06] hover:text-zinc-300"
+            title="Edit Catalog"
+          >
+            ⚙
+          </button>
+        </div>
+      </div>
       <label className="flex items-center gap-3 rounded-2xl border border-amber-400/20 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-200 shadow-inner shadow-black/30">
         <span className="text-base text-amber-300">⌕</span>
         <input
@@ -263,25 +276,6 @@ function Shell() {
 
   return (
     <div className="min-h-[640px] bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.18),_transparent_28%),linear-gradient(180deg,_#16151b_0%,_#09090b_48%,_#050506_100%)] px-4 py-5 text-zinc-100">
-      <header className="mb-4 rounded-[32px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.32em] text-amber-200/80">AWS Console Switchboard</p>
-            <h1 className="mt-2 font-serif text-3xl tracking-tight text-white">{APP_NAME}</h1>
-            <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-400">
-              A local-first control room for deeply grouped AWS accounts and roles, with search, favorites,
-              recent launches, and persistent tree expansion.
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <Badge>Manifest V3</Badge>
-            <ActionButton onClick={openOptionsPage}>
-              Edit Catalog
-            </ActionButton>
-          </div>
-        </div>
-      </header>
-
       <div className="space-y-4">
         <SearchPanel />
         <FavoritesPanel />

@@ -12,6 +12,7 @@ import {
   SelectField,
   TextField,
 } from '@/shared/components'
+import { ColorField } from '@/shared/ColorField'
 
 function useHashEditId(): string | null {
   const [editId, setEditId] = useState<string | null>(() => {
@@ -186,13 +187,10 @@ function FolderEditorPanel({ folderId }: { folderId: FolderId }) {
           <TextField value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="Folder name" />
         </label>
 
-        <label className="block space-y-1.5">
+        <div className="space-y-1.5">
           <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Color</span>
-          <div className="flex items-center gap-3">
-            <TextField value={draft.color ?? ''} onChange={(e) => setDraft((d) => ({ ...d, color: e.target.value }))} placeholder="#f59e0b" className="flex-1" />
-            <span className="h-8 w-8 rounded-lg border border-white/10" style={{ backgroundColor: draft.color ?? '#f59e0b' }} />
-          </div>
-        </label>
+          <ColorField value={draft.color ?? ''} onChange={(color) => setDraft((d) => ({ ...d, color }))} />
+        </div>
 
         <label className="block space-y-1.5">
           <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Parent Folder</span>
@@ -365,13 +363,10 @@ function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
           <TextField value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="Folder name" />
         </label>
 
-        <label className="block space-y-1.5">
+        <div className="space-y-1.5">
           <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Color</span>
-          <div className="flex items-center gap-3">
-            <TextField value={draft.color ?? ''} onChange={(e) => setDraft((d) => ({ ...d, color: e.target.value }))} placeholder="#f59e0b" className="flex-1" />
-            <span className="h-8 w-8 rounded-lg border border-white/10" style={{ backgroundColor: draft.color ?? '#f59e0b' }} />
-          </div>
-        </label>
+          <ColorField value={draft.color ?? ''} onChange={(color) => setDraft((d) => ({ ...d, color }))} />
+        </div>
 
         <label className="block space-y-1.5">
           <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Parent Folder</span>
