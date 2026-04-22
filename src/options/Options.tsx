@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { APP_NAME } from '@/shared/constants'
 import type { FolderDraft, FolderId, NodeId, TargetDraft, TargetId } from '@/shared/types'
 import { getNodeChildren, getTarget, getTargetPathLabel, isFolderId, isTargetId } from '@/domain/catalog'
@@ -8,7 +8,6 @@ import {
   ActionButton,
   EMPTY_FOLDER_DRAFT,
   EMPTY_TARGET_DRAFT,
-  SelectField,
   TextField,
 } from '@/shared/components'
 import { ColorField } from '@/shared/ColorField'
@@ -149,6 +148,84 @@ function FieldLabel({ children }: { children: string }) {
   return <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">{children}</span>
 }
 
+/* ── Folder tree picker (replaces flat <select>) ── */
+
+function FolderPickerNode({ folderId, selectedId, excludeId, onSelect }: {
+  folderId: FolderId
+  selectedId: FolderId | null
+  excludeId?: FolderId
+  onSelect: (id: FolderId | null) => void
+}) {
+  const state = useAppStore((s) => s.state)
+  const folder = state.catalog.foldersById[folderId]
+  if (!folder || folder.id === excludeId) return null
+
+  const children = getNodeChildren(state, folder.id).filter((id) => isFolderId(state, id) && id !== excludeId)
+  const isSelected = selectedId === folderId
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => onSelect(folderId)}
+        className={cn(
+          'flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[13px] transition-colors',
+          isSelected
+            ? 'bg-zinc-700 text-zinc-100'
+            : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200',
+        )}
+      >
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: folder.color ?? '#f59e0b' }} />
+        <span className="truncate">{folder.name}</span>
+      </button>
+      {children.length > 0 ? (
+        <div className="ml-3 border-l border-zinc-800 pl-2">
+          {children.map((childId) => (
+            <FolderPickerNode key={childId} folderId={childId} selectedId={selectedId} excludeId={excludeId} onSelect={onSelect} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function FolderTreePicker({ value, onChange, excludeId }: {
+  value: FolderId | null
+  onChange: (parentId: FolderId | null) => void
+  excludeId?: FolderId
+}) {
+  const state = useAppStore((s) => s.state)
+  const rootFolderIds = state.catalog.rootChildIds.filter((id) => isFolderId(state, id) && id !== excludeId)
+
+  return (
+    <div className="space-y-1">
+      <FieldLabel>Parent Folder</FieldLabel>
+      <div className="rounded border border-zinc-800 bg-zinc-950/60 p-1.5">
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className={cn(
+            'flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[13px] transition-colors',
+            value === null
+              ? 'bg-zinc-700 text-zinc-100'
+              : 'text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300',
+          )}
+        >
+          <span className="text-[10px] text-zinc-600">⌂</span>
+          <span>Root</span>
+        </button>
+        {rootFolderIds.length > 0 ? (
+          <div className="ml-3 border-l border-zinc-800 pl-2">
+            {rootFolderIds.map((id) => (
+              <FolderPickerNode key={id} folderId={id} selectedId={value} excludeId={excludeId} onSelect={onChange} />
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 function FolderEditorPanel({ folderId }: { folderId: FolderId }) {
   const state = useAppStore((s) => s.state)
   const updateFolder = useAppStore((s) => s.updateFolder)
@@ -163,13 +240,6 @@ function FolderEditorPanel({ folderId }: { folderId: FolderId }) {
     if (!folder) return
     setDraft({ name: folder.name, parentId: folder.parentId, color: folder.color })
   }, [folder])
-
-  const folderOptions = useMemo(
-    () => Object.values(state.catalog.foldersById)
-      .filter((f) => f.id !== folderId)
-      .sort((a, b) => a.name.localeCompare(b.name)),
-    [folderId, state.catalog.foldersById],
-  )
 
   if (!folder) return <EmptyEditor />
 
@@ -191,13 +261,11 @@ function FolderEditorPanel({ folderId }: { folderId: FolderId }) {
           <ColorField value={draft.color ?? ''} onChange={(color) => setDraft((d) => ({ ...d, color }))} />
         </div>
 
-        <label className="block space-y-1">
-          <FieldLabel>Parent Folder</FieldLabel>
-          <SelectField value={draft.parentId ?? ''} onChange={(e) => setDraft((d) => ({ ...d, parentId: e.target.value || null }))}>
-            <option value="">Root</option>
-            {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-          </SelectField>
-        </label>
+        <FolderTreePicker
+          value={draft.parentId}
+          onChange={(parentId) => setDraft((d) => ({ ...d, parentId }))}
+          excludeId={folderId}
+        />
 
         <div className="flex gap-2 pt-1">
           <ActionButton onClick={() => updateFolder(folderId, draft)} className="flex-1">Save Changes</ActionButton>
@@ -243,11 +311,6 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
       destinationPath: target.destinationPath,
     })
   }, [target])
-
-  const folderOptions = useMemo(
-    () => Object.values(state.catalog.foldersById).sort((a, b) => a.name.localeCompare(b.name)),
-    [state.catalog.foldersById],
-  )
 
   if (!target) return <EmptyEditor />
 
@@ -310,13 +373,10 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
           <TextField value={draft.destinationPath ?? ''} onChange={(e) => setDraft((d) => ({ ...d, destinationPath: e.target.value }))} placeholder="/console/home" />
         </label>
 
-        <label className="block space-y-1">
-          <FieldLabel>Parent Folder</FieldLabel>
-          <SelectField value={draft.parentId ?? ''} onChange={(e) => setDraft((d) => ({ ...d, parentId: e.target.value || null }))}>
-            <option value="">Root</option>
-            {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-          </SelectField>
-        </label>
+        <FolderTreePicker
+          value={draft.parentId}
+          onChange={(parentId) => setDraft((d) => ({ ...d, parentId }))}
+        />
 
         <div className="flex gap-2 pt-1">
           <ActionButton onClick={() => updateTarget(targetId, draft)} className="flex-1">Save Changes</ActionButton>
@@ -340,14 +400,8 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
 }
 
 function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
-  const state = useAppStore((s) => s.state)
   const createFolder = useAppStore((s) => s.createFolder)
   const [draft, setDraft] = useState<FolderDraft>(EMPTY_FOLDER_DRAFT)
-
-  const folderOptions = useMemo(
-    () => Object.values(state.catalog.foldersById).sort((a, b) => a.name.localeCompare(b.name)),
-    [state.catalog.foldersById],
-  )
 
   return (
     <div className="space-y-5">
@@ -367,13 +421,10 @@ function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
           <ColorField value={draft.color ?? ''} onChange={(color) => setDraft((d) => ({ ...d, color }))} />
         </div>
 
-        <label className="block space-y-1">
-          <FieldLabel>Parent Folder</FieldLabel>
-          <SelectField value={draft.parentId ?? ''} onChange={(e) => setDraft((d) => ({ ...d, parentId: e.target.value || null }))}>
-            <option value="">Root</option>
-            {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-          </SelectField>
-        </label>
+        <FolderTreePicker
+          value={draft.parentId}
+          onChange={(parentId) => setDraft((d) => ({ ...d, parentId }))}
+        />
 
         <ActionButton
           onClick={() => {
@@ -393,14 +444,8 @@ function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
 }
 
 function NewTargetPanel({ onCreated }: { onCreated: (id: TargetId) => void }) {
-  const state = useAppStore((s) => s.state)
   const createTarget = useAppStore((s) => s.createTarget)
   const [draft, setDraft] = useState<TargetDraft>(EMPTY_TARGET_DRAFT)
-
-  const folderOptions = useMemo(
-    () => Object.values(state.catalog.foldersById).sort((a, b) => a.name.localeCompare(b.name)),
-    [state.catalog.foldersById],
-  )
 
   return (
     <div className="space-y-5">
@@ -437,13 +482,10 @@ function NewTargetPanel({ onCreated }: { onCreated: (id: TargetId) => void }) {
           <TextField value={draft.destinationPath ?? ''} onChange={(e) => setDraft((d) => ({ ...d, destinationPath: e.target.value }))} placeholder="/console/home" />
         </label>
 
-        <label className="block space-y-1">
-          <FieldLabel>Parent Folder</FieldLabel>
-          <SelectField value={draft.parentId ?? ''} onChange={(e) => setDraft((d) => ({ ...d, parentId: e.target.value || null }))}>
-            <option value="">Root</option>
-            {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-          </SelectField>
-        </label>
+        <FolderTreePicker
+          value={draft.parentId}
+          onChange={(parentId) => setDraft((d) => ({ ...d, parentId }))}
+        />
 
         <ActionButton
           onClick={() => {
