@@ -83,10 +83,10 @@ function SearchPanel() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-[13px] text-zinc-200">{result.label}</span>
-                    <span className="shrink-0 text-[10px] text-zinc-600">{result.type === 'target' ? result.roleName : 'folder'}</span>
+                    <span className="truncate text-[13px] text-zinc-100">{result.label}</span>
+                    <span className="shrink-0 text-[10px] text-zinc-400">{result.type === 'target' ? result.roleName : 'folder'}</span>
                   </div>
-                  <p className="truncate text-[11px] text-zinc-600">{result.path}</p>
+                  <p className="truncate text-[11px] text-zinc-500">{result.path}</p>
                 </div>
                 {result.type === 'target' && (
                   <button
@@ -134,10 +134,10 @@ function TargetRow({ targetId, showFolderColor }: { targetId: TargetId; showFold
       ) : null}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-[13px] text-zinc-200">{target.displayName}</span>
-          <span className="text-[10px] text-zinc-600">{target.roleName}</span>
+          <span className="truncate text-[13px] text-zinc-100">{target.displayName}</span>
+          <span className="text-[10px] text-zinc-400">{target.roleName}</span>
         </div>
-        <p className="truncate text-[11px] text-zinc-600">{target.accountAlias ?? target.accountId}</p>
+        <p className="truncate text-[11px] text-zinc-500">{target.accountAlias ?? target.accountId}</p>
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <span
@@ -162,7 +162,7 @@ function TargetRow({ targetId, showFolderColor }: { targetId: TargetId; showFold
 
 /* ── Folder tree ── */
 
-function FolderTree({ folderId, depth = 0 }: { folderId: FolderId; depth?: number }) {
+function FolderTree({ folderId }: { folderId: FolderId }) {
   const state = useAppStore((store) => store.state)
   const toggleExpanded = useAppStore((store) => store.toggleFolderExpanded)
   const folder = state.catalog.foldersById[folderId]
@@ -174,35 +174,30 @@ function FolderTree({ folderId, depth = 0 }: { folderId: FolderId; depth?: numbe
 
   return (
     <div>
-      <div
-        className="group flex items-center"
-        style={{ paddingLeft: depth * 14 }}
-      >
+      <div className="group flex items-center">
         <button
           onClick={() => toggleExpanded(folder.id)}
           className="flex flex-1 items-center gap-1.5 rounded px-2 py-1 text-left transition-colors hover:bg-zinc-800/60"
         >
-          <span className="w-3 text-center text-[10px] text-zinc-600">{expanded ? '▾' : '▸'}</span>
+          <span className="w-3 text-center text-[10px] text-zinc-500">{expanded ? '▾' : '▸'}</span>
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: folder.color ?? '#f59e0b' }} />
-          <span className="text-[13px] text-zinc-300">{folder.name}</span>
-          <span className="text-[10px] text-zinc-700">{children.length}</span>
+          <span className="text-[13px] text-zinc-200">{folder.name}</span>
+          <span className="text-[10px] text-zinc-500">{children.length}</span>
         </button>
         <span
           onClick={() => openEditorForNode(folder.id)}
-          className="mr-1 cursor-pointer rounded p-0.5 text-[10px] text-zinc-700 opacity-0 transition group-hover:opacity-100 hover:text-zinc-400"
+          className="mr-1 cursor-pointer rounded p-0.5 text-[10px] text-zinc-600 opacity-0 transition group-hover:opacity-100 hover:text-zinc-400"
         >
           ✎
         </span>
       </div>
-      {expanded ? (
-        <div>
+      {expanded && children.length > 0 ? (
+        <div className="ml-3 border-l border-zinc-800 pl-1">
           {children.map((childId) =>
             isFolderId(state, childId) ? (
-              <FolderTree key={childId} folderId={childId} depth={depth + 1} />
+              <FolderTree key={childId} folderId={childId} />
             ) : isTargetId(state, childId) ? (
-              <div key={childId} style={{ paddingLeft: depth * 14 }}>
-                <TargetRow targetId={childId} />
-              </div>
+              <TargetRow key={childId} targetId={childId} />
             ) : null,
           )}
         </div>
