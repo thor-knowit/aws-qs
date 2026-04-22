@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import App from '@/App'
 
-describe('App', () => {
+describe('App (popup)', () => {
   it('renders the extension shell', async () => {
     render(<App />)
 
@@ -31,22 +31,10 @@ describe('App', () => {
     expect(within(section).getByText(/Acme Corp \/ Production \/ Admin/)).toBeInTheDocument()
   })
 
-  it('exports a JSON payload when the export button is clicked', async () => {
+  it('has an "Edit Catalog" button to open the options page', async () => {
     render(<App />)
 
-    fireEvent.click(await screen.findByText('Export JSON'))
-    const textarea = screen.getByLabelText('Import export payload') as HTMLTextAreaElement
-    expect(textarea.value).toContain('"catalog"')
-    expect(textarea.value).toContain('"targetsById"')
-  })
-
-  it('shows an error message when importing invalid JSON', async () => {
-    render(<App />)
-
-    const textarea = (await screen.findByLabelText('Import export payload')) as HTMLTextAreaElement
-    fireEvent.change(textarea, { target: { value: 'not json' } })
-    fireEvent.click(screen.getByText('Import JSON'))
-
-    expect(await screen.findByText(/Import payload is not valid JSON/i)).toBeInTheDocument()
+    const editButton = await screen.findByText('Edit Catalog')
+    expect(editButton).toBeInTheDocument()
   })
 })
