@@ -127,7 +127,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const url = buildAwsSwitchUrl(target)
     if (globalThis.chrome?.tabs?.create) {
-      await globalThis.chrome.tabs.create({ url })
+      const [activeTab] = await globalThis.chrome.tabs.query({ active: true, currentWindow: true })
+      const index = activeTab?.index != null ? activeTab.index + 1 : undefined
+      await globalThis.chrome.tabs.create({ url, index })
       return
     }
 
