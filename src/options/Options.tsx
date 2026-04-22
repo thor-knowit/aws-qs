@@ -6,7 +6,6 @@ import { useAppStore } from '@/popup/store'
 import { cn } from '@/shared/utils'
 import {
   ActionButton,
-  Badge,
   EMPTY_FOLDER_DRAFT,
   EMPTY_TARGET_DRAFT,
   SelectField,
@@ -37,9 +36,8 @@ function useHashEditId(): string | null {
 
 /* ── Sidebar tree ── */
 
-function SidebarFolder({ folderId, depth = 0, selectedId, onSelect }: {
+function SidebarFolder({ folderId, selectedId, onSelect }: {
   folderId: FolderId
-  depth?: number
   selectedId: string | null
   onSelect: (id: NodeId) => void
 }) {
@@ -57,24 +55,23 @@ function SidebarFolder({ folderId, depth = 0, selectedId, onSelect }: {
         onClick={() => onSelect(folderId)}
         onDoubleClick={() => setExpanded((e) => !e)}
         className={cn(
-          'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition',
+          'flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[13px] transition-colors',
           isSelected
-            ? 'bg-amber-400/15 text-amber-100'
-            : 'text-zinc-300 hover:bg-white/5',
+            ? 'bg-zinc-800 text-zinc-100'
+            : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200',
         )}
-        style={{ paddingLeft: depth * 16 + 8 }}
       >
-        <span className="text-[10px] text-zinc-500">{expanded ? '▾' : '▸'}</span>
-        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: folder.color ?? '#f59e0b' }} />
+        <span className="w-3 text-center text-[10px] text-zinc-600">{expanded ? '▾' : '▸'}</span>
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: folder.color ?? '#f59e0b' }} />
         <span className="truncate">{folder.name}</span>
       </button>
-      {expanded ? (
-        <div>
+      {expanded && children.length > 0 ? (
+        <div className="ml-3 border-l border-zinc-800 pl-2">
           {children.map((childId) =>
             isFolderId(state, childId) ? (
-              <SidebarFolder key={childId} folderId={childId} depth={depth + 1} selectedId={selectedId} onSelect={onSelect} />
+              <SidebarFolder key={childId} folderId={childId} selectedId={selectedId} onSelect={onSelect} />
             ) : isTargetId(state, childId) ? (
-              <SidebarTarget key={childId} targetId={childId} depth={depth + 1} selectedId={selectedId} onSelect={onSelect} />
+              <SidebarTarget key={childId} targetId={childId} selectedId={selectedId} onSelect={onSelect} />
             ) : null,
           )}
         </div>
@@ -83,9 +80,8 @@ function SidebarFolder({ folderId, depth = 0, selectedId, onSelect }: {
   )
 }
 
-function SidebarTarget({ targetId, depth, selectedId, onSelect }: {
+function SidebarTarget({ targetId, selectedId, onSelect }: {
   targetId: TargetId
-  depth: number
   selectedId: string | null
   onSelect: (id: NodeId) => void
 }) {
@@ -99,14 +95,13 @@ function SidebarTarget({ targetId, depth, selectedId, onSelect }: {
     <button
       onClick={() => onSelect(targetId)}
       className={cn(
-        'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition',
+        'flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[13px] transition-colors',
         isSelected
-          ? 'bg-amber-400/15 text-amber-100'
-          : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200',
+          ? 'bg-zinc-800 text-zinc-100'
+          : 'text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300',
       )}
-      style={{ paddingLeft: depth * 16 + 8 }}
     >
-      <span className="text-[10px]">◆</span>
+      <span className="w-3 text-center text-[9px] text-zinc-600">◆</span>
       <span className="truncate">{target.displayName}</span>
     </button>
   )
@@ -120,27 +115,27 @@ function Sidebar({ selectedId, onSelect, onNew }: {
   const state = useAppStore((s) => s.state)
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-r border-white/8 bg-zinc-950/80">
-      <div className="flex items-center gap-2 border-b border-white/8 p-4">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-amber-200/70">Catalog</p>
+    <aside className="flex w-60 shrink-0 flex-col border-r border-zinc-800 bg-[#0a0a0c]">
+      <div className="border-b border-zinc-800 px-3 py-2.5">
+        <p className="text-[10px] uppercase tracking-widest text-zinc-500">Catalog</p>
       </div>
 
-      <div className="flex-1 overflow-auto p-3">
-        <div className="space-y-0.5">
+      <div className="flex-1 overflow-auto p-2">
+        <div className="space-y-px">
           {state.catalog.rootChildIds.map((id: NodeId) =>
             isFolderId(state, id) ? (
               <SidebarFolder key={id} folderId={id} selectedId={selectedId} onSelect={onSelect} />
             ) : isTargetId(state, id) ? (
-              <SidebarTarget key={id} targetId={id} depth={0} selectedId={selectedId} onSelect={onSelect} />
+              <SidebarTarget key={id} targetId={id} selectedId={selectedId} onSelect={onSelect} />
             ) : null,
           )}
           {state.catalog.rootChildIds.length === 0 ? (
-            <p className="px-2 py-4 text-xs text-zinc-500">No items yet. Create a folder or target to get started.</p>
+            <p className="px-2 py-3 text-[11px] text-zinc-600">No items yet.</p>
           ) : null}
         </div>
       </div>
 
-      <div className="flex gap-2 border-t border-white/8 p-3">
+      <div className="flex gap-1.5 border-t border-zinc-800 p-2">
         <ActionButton className="flex-1 text-[10px]" onClick={() => onNew('folder')}>+ Folder</ActionButton>
         <ActionButton className="flex-1 text-[10px]" onClick={() => onNew('target')}>+ Target</ActionButton>
       </div>
@@ -149,6 +144,10 @@ function Sidebar({ selectedId, onSelect, onNew }: {
 }
 
 /* ── Editor panels ── */
+
+function FieldLabel({ children }: { children: string }) {
+  return <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">{children}</span>
+}
 
 function FolderEditorPanel({ folderId }: { folderId: FolderId }) {
   const state = useAppStore((s) => s.state)
@@ -175,44 +174,44 @@ function FolderEditorPanel({ folderId }: { folderId: FolderId }) {
   if (!folder) return <EmptyEditor />
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-medium text-zinc-100">Edit Folder</h2>
-        <p className="mt-1 text-sm text-zinc-500">Modify folder properties and organization.</p>
+        <h2 className="text-[15px] font-medium text-zinc-100">Edit Folder</h2>
+        <p className="mt-0.5 text-[12px] text-zinc-500">Modify folder properties and organization.</p>
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Name</span>
+      <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
+        <label className="block space-y-1">
+          <FieldLabel>Name</FieldLabel>
           <TextField value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="Folder name" />
         </label>
 
-        <div className="space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Color</span>
+        <div className="space-y-1">
+          <FieldLabel>Color</FieldLabel>
           <ColorField value={draft.color ?? ''} onChange={(color) => setDraft((d) => ({ ...d, color }))} />
         </div>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Parent Folder</span>
+        <label className="block space-y-1">
+          <FieldLabel>Parent Folder</FieldLabel>
           <SelectField value={draft.parentId ?? ''} onChange={(e) => setDraft((d) => ({ ...d, parentId: e.target.value || null }))}>
             <option value="">Root</option>
             {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
           </SelectField>
         </label>
 
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2 pt-1">
           <ActionButton onClick={() => updateFolder(folderId, draft)} className="flex-1">Save Changes</ActionButton>
           <ActionButton onClick={() => moveNode({ nodeId: folderId, nextParentId: draft.parentId })} className="flex-1">Move</ActionButton>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <ActionButton onClick={() => reorderSibling(folderId, 'up')}>↑ Move Up</ActionButton>
-        <ActionButton onClick={() => reorderSibling(folderId, 'down')}>↓ Move Down</ActionButton>
+      <div className="flex items-center gap-1.5">
+        <ActionButton onClick={() => reorderSibling(folderId, 'up')}>↑ Up</ActionButton>
+        <ActionButton onClick={() => reorderSibling(folderId, 'down')}>↓ Down</ActionButton>
         <div className="flex-1" />
         <button
           onClick={() => deleteFolder(folderId)}
-          className="rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-rose-100 transition hover:bg-rose-400/20"
+          className="rounded border border-rose-900/60 bg-rose-950/40 px-3 py-1.5 text-[11px] font-medium text-rose-300 transition hover:bg-rose-900/30"
         >
           Delete Folder
         </button>
@@ -256,82 +255,82 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
   const pathLabel = getTargetPathLabel(state, targetId)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-medium text-zinc-100">Edit Target</h2>
-            <p className="mt-1 text-sm text-zinc-500">{pathLabel}</p>
+            <h2 className="text-[15px] font-medium text-zinc-100">Edit Target</h2>
+            <p className="mt-0.5 text-[12px] text-zinc-500">{pathLabel}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <button
               onClick={() => toggleFavorite(targetId)}
               className={cn(
-                'rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] transition',
-                isFavorite ? 'border-amber-300/40 bg-amber-300/15 text-amber-100' : 'border-white/10 text-zinc-400 hover:border-amber-300/30',
+                'rounded border px-2.5 py-1 text-[11px] transition',
+                isFavorite ? 'border-amber-800/50 bg-amber-950/40 text-amber-300' : 'border-zinc-700 text-zinc-500 hover:border-zinc-600',
               )}
             >
-              {isFavorite ? '★ Favorited' : '☆ Favorite'}
+              {isFavorite ? '★ Pinned' : '☆ Pin'}
             </button>
             <button
               onClick={() => activateTarget(targetId)}
-              className="rounded-full bg-gradient-to-r from-amber-300 via-orange-300 to-yellow-200 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-950"
+              className="rounded bg-zinc-100 px-3 py-1 text-[11px] font-medium text-zinc-900 transition hover:bg-white"
             >
-              Switch Role
+              Switch
             </button>
           </div>
         </div>
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Display Name</span>
+      <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
+        <label className="block space-y-1">
+          <FieldLabel>Display Name</FieldLabel>
           <TextField value={draft.displayName} onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))} placeholder="Admin" />
         </label>
 
-        <div className="grid grid-cols-2 gap-4">
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Account ID</span>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1">
+            <FieldLabel>Account ID</FieldLabel>
             <TextField value={draft.accountId} onChange={(e) => setDraft((d) => ({ ...d, accountId: e.target.value }))} placeholder="123456789012" />
           </label>
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Account Alias</span>
+          <label className="block space-y-1">
+            <FieldLabel>Account Alias</FieldLabel>
             <TextField value={draft.accountAlias ?? ''} onChange={(e) => setDraft((d) => ({ ...d, accountAlias: e.target.value }))} placeholder="customer-prod" />
           </label>
         </div>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Role Name</span>
+        <label className="block space-y-1">
+          <FieldLabel>Role Name</FieldLabel>
           <TextField value={draft.roleName} onChange={(e) => setDraft((d) => ({ ...d, roleName: e.target.value }))} placeholder="AdministratorAccess" />
         </label>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Destination Path</span>
+        <label className="block space-y-1">
+          <FieldLabel>Destination Path</FieldLabel>
           <TextField value={draft.destinationPath ?? ''} onChange={(e) => setDraft((d) => ({ ...d, destinationPath: e.target.value }))} placeholder="/console/home" />
         </label>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Parent Folder</span>
+        <label className="block space-y-1">
+          <FieldLabel>Parent Folder</FieldLabel>
           <SelectField value={draft.parentId ?? ''} onChange={(e) => setDraft((d) => ({ ...d, parentId: e.target.value || null }))}>
             <option value="">Root</option>
             {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
           </SelectField>
         </label>
 
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2 pt-1">
           <ActionButton onClick={() => updateTarget(targetId, draft)} className="flex-1">Save Changes</ActionButton>
           <ActionButton onClick={() => moveNode({ nodeId: targetId, nextParentId: draft.parentId })} className="flex-1">Move</ActionButton>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <ActionButton onClick={() => reorderSibling(targetId, 'up')}>↑ Move Up</ActionButton>
-        <ActionButton onClick={() => reorderSibling(targetId, 'down')}>↓ Move Down</ActionButton>
+      <div className="flex items-center gap-1.5">
+        <ActionButton onClick={() => reorderSibling(targetId, 'up')}>↑ Up</ActionButton>
+        <ActionButton onClick={() => reorderSibling(targetId, 'down')}>↓ Down</ActionButton>
         <div className="flex-1" />
         <button
           onClick={() => deleteTarget(targetId)}
-          className="rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-rose-100 transition hover:bg-rose-400/20"
+          className="rounded border border-rose-900/60 bg-rose-950/40 px-3 py-1.5 text-[11px] font-medium text-rose-300 transition hover:bg-rose-900/30"
         >
           Delete Target
         </button>
@@ -351,25 +350,25 @@ function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-medium text-zinc-100">New Folder</h2>
-        <p className="mt-1 text-sm text-zinc-500">Create a folder to organize your targets.</p>
+        <h2 className="text-[15px] font-medium text-zinc-100">New Folder</h2>
+        <p className="mt-0.5 text-[12px] text-zinc-500">Create a folder to organize your targets.</p>
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Name</span>
+      <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
+        <label className="block space-y-1">
+          <FieldLabel>Name</FieldLabel>
           <TextField value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="Folder name" />
         </label>
 
-        <div className="space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Color</span>
+        <div className="space-y-1">
+          <FieldLabel>Color</FieldLabel>
           <ColorField value={draft.color ?? ''} onChange={(color) => setDraft((d) => ({ ...d, color }))} />
         </div>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Parent Folder</span>
+        <label className="block space-y-1">
+          <FieldLabel>Parent Folder</FieldLabel>
           <SelectField value={draft.parentId ?? ''} onChange={(e) => setDraft((d) => ({ ...d, parentId: e.target.value || null }))}>
             <option value="">Root</option>
             {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
@@ -379,7 +378,6 @@ function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
         <ActionButton
           onClick={() => {
             createFolder(draft)
-            // Find the newly created folder by name (most recent)
             const folders = Object.values(useAppStore.getState().state.catalog.foldersById)
             const created = folders.find((f) => f.name === draft.name)
             if (created) onCreated(created.id)
@@ -405,42 +403,42 @@ function NewTargetPanel({ onCreated }: { onCreated: (id: TargetId) => void }) {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-medium text-zinc-100">New Target</h2>
-        <p className="mt-1 text-sm text-zinc-500">Add an AWS account/role switch target.</p>
+        <h2 className="text-[15px] font-medium text-zinc-100">New Target</h2>
+        <p className="mt-0.5 text-[12px] text-zinc-500">Add an AWS account/role switch target.</p>
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Display Name</span>
+      <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
+        <label className="block space-y-1">
+          <FieldLabel>Display Name</FieldLabel>
           <TextField value={draft.displayName} onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))} placeholder="Admin" />
         </label>
 
-        <div className="grid grid-cols-2 gap-4">
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Account ID</span>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1">
+            <FieldLabel>Account ID</FieldLabel>
             <TextField value={draft.accountId} onChange={(e) => setDraft((d) => ({ ...d, accountId: e.target.value }))} placeholder="123456789012" />
           </label>
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Account Alias</span>
+          <label className="block space-y-1">
+            <FieldLabel>Account Alias</FieldLabel>
             <TextField value={draft.accountAlias ?? ''} onChange={(e) => setDraft((d) => ({ ...d, accountAlias: e.target.value }))} placeholder="customer-prod" />
           </label>
         </div>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Role Name</span>
+        <label className="block space-y-1">
+          <FieldLabel>Role Name</FieldLabel>
           <TextField value={draft.roleName} onChange={(e) => setDraft((d) => ({ ...d, roleName: e.target.value }))} placeholder="AdministratorAccess" />
         </label>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Destination Path</span>
+        <label className="block space-y-1">
+          <FieldLabel>Destination Path</FieldLabel>
           <TextField value={draft.destinationPath ?? ''} onChange={(e) => setDraft((d) => ({ ...d, destinationPath: e.target.value }))} placeholder="/console/home" />
         </label>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Parent Folder</span>
+        <label className="block space-y-1">
+          <FieldLabel>Parent Folder</FieldLabel>
           <SelectField value={draft.parentId ?? ''} onChange={(e) => setDraft((d) => ({ ...d, parentId: e.target.value || null }))}>
             <option value="">Root</option>
             {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
@@ -472,21 +470,21 @@ function ImportExportPanel() {
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-medium text-zinc-100">Import / Export</h2>
-        <p className="mt-1 text-sm text-zinc-500">Transfer your catalog between devices or back it up as JSON.</p>
+        <h2 className="text-[15px] font-medium text-zinc-100">Import / Export</h2>
+        <p className="mt-0.5 text-[12px] text-zinc-500">Transfer your catalog between devices or back it up as JSON.</p>
       </div>
 
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
         <textarea
           aria-label="Import export payload"
           value={buffer}
           onChange={(e) => { setBuffer(e.target.value); setError(null); setStatus(null) }}
-          className="min-h-56 w-full rounded-2xl border border-white/10 bg-black/25 p-4 font-mono text-xs text-zinc-100 outline-none placeholder:text-zinc-500"
+          className="min-h-48 w-full rounded border border-zinc-800 bg-zinc-950 p-3 font-mono text-[12px] text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-zinc-600"
           placeholder="Paste exported JSON here or click Export to generate it"
         />
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <ActionButton
             onClick={() => { setBuffer(exportState()); setStatus('Exported current catalog.'); setError(null) }}
             className="flex-1"
@@ -503,8 +501,8 @@ function ImportExportPanel() {
             Import JSON
           </ActionButton>
         </div>
-        {status ? <p className="text-xs text-emerald-300">{status}</p> : null}
-        {error ? <p className="text-xs text-rose-300">{error}</p> : null}
+        {status ? <p className="text-[11px] text-emerald-400">{status}</p> : null}
+        {error ? <p className="text-[11px] text-rose-400">{error}</p> : null}
       </div>
     </div>
   )
@@ -513,8 +511,8 @@ function ImportExportPanel() {
 function EmptyEditor() {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
-      <p className="text-[11px] uppercase tracking-[0.3em] text-zinc-500">Select a node from the sidebar</p>
-      <p className="mt-2 text-sm text-zinc-600">or create a new folder / target to get started.</p>
+      <p className="text-[11px] uppercase tracking-widest text-zinc-600">Select from sidebar</p>
+      <p className="mt-1 text-[12px] text-zinc-700">or create a new folder / target.</p>
     </div>
   )
 }
@@ -558,7 +556,6 @@ export default function Options() {
     } else if (isTargetId(state, id)) {
       setView({ kind: 'target', id })
     }
-    // Update hash for deep-link persistence
     globalThis.history.replaceState(null, '', `#edit=${id}`)
   }
 
@@ -568,8 +565,8 @@ export default function Options() {
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm uppercase tracking-[0.28em] text-zinc-500">
-        Hydrating catalog…
+      <div className="flex min-h-screen items-center justify-center text-[11px] uppercase tracking-widest text-zinc-600">
+        Loading…
       </div>
     )
   }
@@ -577,24 +574,21 @@ export default function Options() {
   const selectedId = view.kind === 'folder' ? view.id : view.kind === 'target' ? view.id : null
 
   return (
-    <div className="flex min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.10),_transparent_40%),linear-gradient(180deg,_#16151b_0%,_#09090b_48%,_#050506_100%)] text-zinc-100">
+    <div className="flex min-h-screen bg-[#0c0c0e] text-zinc-100">
       <Sidebar selectedId={selectedId} onSelect={handleSelect} onNew={handleNew} />
 
       <main className="flex-1 overflow-auto">
         {/* Header */}
-        <header className="flex items-center justify-between border-b border-white/8 px-8 py-5">
+        <header className="flex items-center justify-between border-b border-zinc-800 px-6 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.32em] text-amber-200/70">Settings</p>
-            <h1 className="mt-1 font-serif text-xl tracking-tight text-white">{APP_NAME}</h1>
+            <h1 className="text-[14px] font-medium text-zinc-200">{APP_NAME}</h1>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Settings</p>
           </div>
-          <div className="flex gap-2">
-            <ActionButton onClick={() => setView({ kind: 'import-export' })}>Import / Export</ActionButton>
-            <Badge>Manifest V3</Badge>
-          </div>
+          <ActionButton onClick={() => setView({ kind: 'import-export' })}>Import / Export</ActionButton>
         </header>
 
         {/* Editor area */}
-        <div className="mx-auto max-w-2xl px-8 py-8">
+        <div className="mx-auto max-w-xl px-6 py-6">
           {view.kind === 'folder' ? <FolderEditorPanel folderId={view.id} /> : null}
           {view.kind === 'target' ? <TargetEditorPanel targetId={view.id} /> : null}
           {view.kind === 'new-folder' ? <NewFolderPanel onCreated={(id) => { setView({ kind: 'folder', id }); globalThis.history.replaceState(null, '', `#edit=${id}`) }} /> : null}

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { cn } from '@/shared/utils'
 
 /* ── Color math ── */
 
@@ -42,7 +41,7 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   if (max === min) return [0, 0, Math.round(l * 100)]
 
   const d = max - min
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max - min)
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
   let h = 0
   if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6
   else if (max === g) h = ((b - r) / d + 2) / 6
@@ -241,17 +240,17 @@ export function ColorField({
         : null
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {/* Swatch · text input · inline format label */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {/* Native color picker behind styled swatch */}
-        <label className="relative h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-white/10 transition hover:border-amber-300/30">
+        <label className="relative h-8 w-8 shrink-0 cursor-pointer overflow-hidden rounded border border-zinc-700 transition hover:border-zinc-500">
           {/* Checkerboard for alpha-color visibility */}
           <span
             className="absolute inset-0"
             style={{
               background:
-                'repeating-conic-gradient(#27272a 0% 25%, transparent 0% 50%) 0 0 / 8px 8px',
+                'repeating-conic-gradient(#27272a 0% 25%, transparent 0% 50%) 0 0 / 6px 6px',
             }}
           />
           <input
@@ -265,7 +264,6 @@ export function ColorField({
             className="absolute inset-0"
             style={{ backgroundColor: effectiveValue }}
           />
-          <span className="absolute inset-0 rounded-[11px] ring-1 ring-inset ring-white/[0.06]" />
         </label>
 
         {/* Text input with cycling format badge */}
@@ -275,27 +273,25 @@ export function ColorField({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className={cn(
-              'w-full rounded-xl border border-white/10 bg-black/25 py-2 pl-3 pr-14 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-amber-300/40',
-            )}
+            className="w-full rounded border border-zinc-700 bg-zinc-900 py-1.5 pl-2.5 pr-12 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-zinc-500"
           />
           <button
             type="button"
             onClick={cycleMode}
             title="Cycle format: hex → hsl → hsla"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-1.5 py-0.5 font-mono text-[10px] text-zinc-600 transition hover:bg-white/[0.06] hover:text-zinc-400"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded px-1 py-0.5 font-mono text-[10px] text-zinc-600 transition hover:bg-zinc-800 hover:text-zinc-400"
           >
             {mode}
           </button>
         </div>
       </div>
 
-      {/* HSL(A) channel controls — compact, understated */}
+      {/* HSL(A) channel controls */}
       {channels && (
-        <div className="flex items-center gap-3 pl-[52px]">
+        <div className="flex items-center gap-2 pl-10">
           {channels.map(({ key, max, step, suffix }) => (
-            <div key={key} className="flex items-center gap-1">
-              <span className="text-[10px] lowercase text-zinc-600">
+            <div key={key} className="flex items-center gap-0.5">
+              <span className="text-[10px] text-zinc-600">
                 {key}
               </span>
               <input
@@ -305,7 +301,7 @@ export function ColorField({
                 step={step}
                 value={hslDraft[key]}
                 onChange={(e) => handleHslChange(key, e.target.value)}
-                className="w-14 rounded-lg border border-white/8 bg-black/20 px-2 py-1 text-xs text-zinc-300 outline-none focus:border-amber-300/30"
+                className="w-12 rounded border border-zinc-700 bg-zinc-900 px-1.5 py-0.5 text-[11px] text-zinc-300 outline-none focus:border-zinc-500"
               />
               {suffix && (
                 <span className="text-[10px] text-zinc-600">{suffix}</span>

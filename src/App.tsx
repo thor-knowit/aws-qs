@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FolderId, NodeId, TargetId } from '@/shared/types'
-import { getNodeChildren, getTarget, getTargetPathLabel, isFolderId, isTargetId, searchCatalog } from '@/domain/catalog'
+import { getNodeChildren, getTarget, isFolderId, isTargetId, searchCatalog } from '@/domain/catalog'
 import { useAppStore } from '@/popup/store'
 import { cn } from '@/shared/utils'
-import { Badge, SectionTitle, openEditorForNode, openOptionsPage } from '@/shared/components'
+import { openEditorForNode, openOptionsPage } from '@/shared/components'
 import './index.css'
 
 /* ── Search ── */
@@ -14,6 +14,7 @@ function SearchPanel() {
   const setQuery = useAppStore((store) => store.setSearchQuery)
   const results = useMemo(() => searchCatalog(state, query), [state, query])
   const activateTarget = useAppStore((store) => store.activateTarget)
+  const toggleFavorite = useAppStore((store) => store.toggleFavorite)
   const [activeIndex, setActiveIndex] = useState(0)
 
   useEffect(() => {
@@ -23,24 +24,8 @@ function SearchPanel() {
   const targetResults = useMemo(() => results.filter((r) => r.type === 'target'), [results])
 
   return (
-    <section className="rounded-[28px] border border-white/10 bg-black/20 p-4 shadow-[0_20px_45px_-24px_rgba(0,0,0,0.6)] backdrop-blur">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">Quick Search</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">
-            {results.length ? `${results.length} matches` : 'browse + search'}
-          </span>
-          <button
-            onClick={openOptionsPage}
-            className="rounded-lg px-1.5 py-1 text-zinc-500 transition hover:bg-white/[0.06] hover:text-zinc-300"
-            title="Edit Catalog"
-          >
-            ⚙
-          </button>
-        </div>
-      </div>
-      <label className="flex items-center gap-3 rounded-2xl border border-amber-400/20 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-200 shadow-inner shadow-black/30">
-        <span className="text-base text-amber-300">⌕</span>
+    <div className="px-3 pt-3 pb-1.5">
+      <div className="flex items-center gap-2">
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -61,16 +46,29 @@ function SearchPanel() {
               setQuery('')
             }
           }}
-          placeholder="Search customer, account, alias, role..."
-          className="w-full bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-500"
+          placeholder="Search roles..."
+          className="flex-1 border-b border-zinc-800 bg-transparent px-1 pb-2 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-zinc-600"
           aria-label="Search catalog"
+          autoFocus
         />
-      </label>
+        <button
+          onClick={openOptionsPage}
+          className="mb-1 rounded p-1 text-zinc-600 transition hover:bg-zinc-800 hover:text-zinc-400"
+          title="Settings"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <circle cx="8" cy="8" r="2.5" />
+            <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.17 3.17l1.41 1.41M11.42 11.42l1.41 1.41M3.17 12.83l1.41-1.41M11.42 4.58l1.41-1.41" />
+          </svg>
+        </button>
+      </div>
+
       {query ? (
-        <div className="mt-3 max-h-48 space-y-2 overflow-auto pr-1">
+        <div className="mt-1 max-h-52 overflow-auto">
           {results.map((result) => {
             const targetIndex = result.type === 'target' ? targetResults.findIndex((r) => r.id === result.id) : -1
             const isActive = targetIndex !== -1 && targetIndex === activeIndex
+            const isFav = result.type === 'target' && state.usage.favoriteTargetIds.includes(result.id as TargetId)
             return (
               <button
                 key={result.id}
@@ -78,35 +76,44 @@ function SearchPanel() {
                 onMouseEnter={() => targetIndex !== -1 && setActiveIndex(targetIndex)}
                 aria-selected={isActive}
                 className={cn(
-                  'w-full rounded-2xl border px-3 py-3 text-left transition',
-                  result.type === 'target'
-                    ? 'border-white/10 bg-white/[0.04] hover:border-amber-400/40 hover:bg-amber-400/10'
-                    : 'border-white/5 bg-white/[0.02] opacity-80',
-                  isActive && 'border-amber-400/70 bg-amber-400/15 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]',
+                  'group flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors',
+                  result.type === 'target' ? 'hover:bg-zinc-800/80' : 'opacity-50',
+                  isActive && 'bg-zinc-800',
                 )}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-zinc-100">{result.label}</p>
-                    <p className="mt-1 text-xs text-zinc-400">{result.path}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-[13px] text-zinc-200">{result.label}</span>
+                    <span className="shrink-0 text-[10px] text-zinc-600">{result.type === 'target' ? result.roleName : 'folder'}</span>
                   </div>
-                  <Badge>{result.type}</Badge>
+                  <p className="truncate text-[11px] text-zinc-600">{result.path}</p>
                 </div>
+                {result.type === 'target' && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleFavorite(result.id as TargetId) }}
+                    className={cn(
+                      'shrink-0 text-[11px] opacity-0 transition group-hover:opacity-100',
+                      isFav ? 'text-amber-400 opacity-100' : 'text-zinc-600 hover:text-zinc-400',
+                    )}
+                  >
+                    {isFav ? '★' : '☆'}
+                  </button>
+                )}
               </button>
             )
           })}
           {results.length === 0 ? (
-            <p className="px-1 py-2 text-xs text-zinc-500">No matches. Try a role name, account alias, or folder.</p>
+            <p className="px-2 py-3 text-[11px] text-zinc-600">No matches</p>
           ) : null}
         </div>
       ) : null}
-    </section>
+    </div>
   )
 }
 
-/* ── Target card (compact) ── */
+/* ── Compact target row ── */
 
-function TargetCard({ targetId }: { targetId: TargetId }) {
+function TargetRow({ targetId }: { targetId: TargetId }) {
   const state = useAppStore((store) => store.state)
   const activateTarget = useAppStore((store) => store.activateTarget)
   const toggleFavorite = useAppStore((store) => store.toggleFavorite)
@@ -117,42 +124,35 @@ function TargetCard({ targetId }: { targetId: TargetId }) {
   const isFavorite = state.usage.favoriteTargetIds.includes(targetId)
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 shadow-[0_10px_24px_-20px_rgba(0,0,0,0.8)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-zinc-100">{target.displayName}</p>
-          <p className="mt-1 text-xs text-zinc-400">{getTargetPathLabel(state, targetId)}</p>
+    <button
+      onClick={() => activateTarget(targetId)}
+      className="group flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-zinc-800/80"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-[13px] text-zinc-200">{target.displayName}</span>
+          <span className="text-[10px] text-zinc-600">{target.roleName}</span>
         </div>
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => toggleFavorite(targetId)}
-            className={cn(
-              'rounded-full border px-2 py-1 text-[10px] uppercase tracking-[0.2em]',
-              isFavorite ? 'border-amber-300/40 bg-amber-300/15 text-amber-100' : 'border-white/10 text-zinc-400',
-            )}
-          >
-            {isFavorite ? '★' : '☆'}
-          </button>
-          <button
-            onClick={() => openEditorForNode(targetId)}
-            className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-zinc-300"
-            title="Edit in settings"
-          >
-            ✎
-          </button>
-        </div>
+        <p className="truncate text-[11px] text-zinc-600">{target.accountAlias ?? target.accountId}</p>
       </div>
-      <div className="mt-3 flex items-center justify-between text-xs text-zinc-500">
-        <span>{target.accountAlias ?? target.accountId}</span>
-        <span>{target.roleName}</span>
+      <div className="flex shrink-0 items-center gap-1">
+        <span
+          onClick={(e) => { e.stopPropagation(); toggleFavorite(targetId) }}
+          className={cn(
+            'rounded p-0.5 text-[11px] transition',
+            isFavorite ? 'text-amber-400' : 'text-zinc-700 opacity-0 group-hover:opacity-100 hover:text-zinc-400',
+          )}
+        >
+          {isFavorite ? '★' : '☆'}
+        </span>
+        <span
+          onClick={(e) => { e.stopPropagation(); openEditorForNode(targetId) }}
+          className="rounded p-0.5 text-[11px] text-zinc-700 opacity-0 transition group-hover:opacity-100 hover:text-zinc-400"
+        >
+          ✎
+        </span>
       </div>
-      <button
-        onClick={() => activateTarget(targetId)}
-        className="mt-3 w-full rounded-xl bg-gradient-to-r from-amber-300 via-orange-300 to-yellow-200 px-3 py-2 text-sm font-semibold text-zinc-950 transition hover:brightness-105"
-      >
-        Switch role
-      </button>
-    </div>
+    </button>
   )
 }
 
@@ -169,35 +169,35 @@ function FolderTree({ folderId, depth = 0 }: { folderId: FolderId; depth?: numbe
   const expanded = state.ui.expandedFolderIds.includes(folder.id)
 
   return (
-    <div className="space-y-2">
+    <div>
       <div
-        className="flex items-center gap-2"
-        style={{ marginLeft: depth * 12 }}
+        className="group flex items-center"
+        style={{ paddingLeft: depth * 14 }}
       >
         <button
           onClick={() => toggleExpanded(folder.id)}
-          className="flex flex-1 items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2 text-left transition hover:border-white/15 hover:bg-white/[0.05]"
+          className="flex flex-1 items-center gap-1.5 rounded px-2 py-1 text-left transition-colors hover:bg-zinc-800/60"
         >
-          <span className="text-xs text-amber-300">{expanded ? '▾' : '▸'}</span>
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: folder.color ?? '#f59e0b' }} />
-          <span className="text-sm font-medium text-zinc-100">{folder.name}</span>
+          <span className="w-3 text-center text-[10px] text-zinc-600">{expanded ? '▾' : '▸'}</span>
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: folder.color ?? '#f59e0b' }} />
+          <span className="text-[13px] text-zinc-300">{folder.name}</span>
+          <span className="text-[10px] text-zinc-700">{children.length}</span>
         </button>
-        <button
+        <span
           onClick={() => openEditorForNode(folder.id)}
-          className="rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[10px] text-zinc-300 transition hover:border-amber-300/30"
-          title="Edit in settings"
+          className="mr-1 cursor-pointer rounded p-0.5 text-[10px] text-zinc-700 opacity-0 transition group-hover:opacity-100 hover:text-zinc-400"
         >
           ✎
-        </button>
+        </span>
       </div>
       {expanded ? (
-        <div className="space-y-2">
+        <div>
           {children.map((childId) =>
             isFolderId(state, childId) ? (
               <FolderTree key={childId} folderId={childId} depth={depth + 1} />
             ) : isTargetId(state, childId) ? (
-              <div key={childId} style={{ marginLeft: (depth + 1) * 12 }}>
-                <TargetCard targetId={childId} />
+              <div key={childId} style={{ paddingLeft: depth * 14 }}>
+                <TargetRow targetId={childId} />
               </div>
             ) : null,
           )}
@@ -214,13 +214,14 @@ function FavoritesPanel() {
   if (favorites.length === 0) return null
 
   return (
-    <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-4">
-      <SectionTitle title="Favorites" meta={`${favorites.length} pinned`} />
-      <div className="space-y-3">
-        {favorites.map((targetId) => (
-          <TargetCard key={targetId} targetId={targetId} />
-        ))}
+    <section className="px-1">
+      <div className="flex items-center gap-2 px-2 pb-1 pt-2">
+        <h2 className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">Pinned</h2>
+        <span className="text-[10px] text-zinc-700">{favorites.length}</span>
       </div>
+      {favorites.map((targetId) => (
+        <TargetRow key={targetId} targetId={targetId} />
+      ))}
     </section>
   )
 }
@@ -230,28 +231,32 @@ function RecentsPanel() {
   if (recents.length === 0) return null
 
   return (
-    <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-4">
-      <SectionTitle title="Recent Launches" meta="path aware" />
-      <div className="space-y-3">
-        {recents.map((targetId) => (
-          <TargetCard key={targetId} targetId={targetId} />
-        ))}
+    <section className="px-1">
+      <div className="flex items-center gap-2 px-2 pb-1 pt-2">
+        <h2 className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">Recent</h2>
+        <span className="text-[10px] text-zinc-700">{recents.length}</span>
       </div>
+      {recents.map((targetId) => (
+        <TargetRow key={targetId} targetId={targetId} />
+      ))}
     </section>
   )
 }
 
 function BrowsePanel() {
   const state = useAppStore((store) => store.state)
+  const rootChildren = state.catalog.rootChildIds
+
+  if (rootChildren.length === 0) return null
 
   return (
-    <section className="rounded-[32px] border border-white/10 bg-zinc-950/70 p-4 shadow-[0_28px_80px_-36px_rgba(0,0,0,0.9)] backdrop-blur-xl">
-      <SectionTitle title="Browse Catalog" meta="expansion persists" />
-      <div className="space-y-3">
-        {state.catalog.rootChildIds.map((id: NodeId) =>
-          isFolderId(state, id) ? <FolderTree key={id} folderId={id} /> : isTargetId(state, id) ? <TargetCard key={id} targetId={id} /> : null,
-        )}
+    <section className="px-1">
+      <div className="flex items-center gap-2 px-2 pb-1 pt-2">
+        <h2 className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">Catalog</h2>
       </div>
+      {rootChildren.map((id: NodeId) =>
+        isFolderId(state, id) ? <FolderTree key={id} folderId={id} /> : isTargetId(state, id) ? <TargetRow key={id} targetId={id} /> : null,
+      )}
     </section>
   )
 }
@@ -268,16 +273,16 @@ function Shell() {
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-[640px] items-center justify-center text-sm uppercase tracking-[0.28em] text-zinc-500">
-        Hydrating catalog…
+      <div className="flex min-h-[480px] items-center justify-center text-[11px] uppercase tracking-widest text-zinc-600">
+        Loading…
       </div>
     )
   }
 
   return (
-    <div className="min-h-[640px] bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.18),_transparent_28%),linear-gradient(180deg,_#16151b_0%,_#09090b_48%,_#050506_100%)] px-4 py-5 text-zinc-100">
-      <div className="space-y-4">
-        <SearchPanel />
+    <div className="min-h-[480px] bg-[#0c0c0e] pb-3">
+      <SearchPanel />
+      <div className="divide-y divide-zinc-800/60">
         <FavoritesPanel />
         <RecentsPanel />
         <BrowsePanel />

@@ -6,35 +6,32 @@ describe('App (popup)', () => {
   it('renders the extension shell', async () => {
     render(<App />)
 
-    expect(await screen.findByText('AWS Quick Switch')).toBeInTheDocument()
-    expect(screen.getByText('Browse Catalog')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Search customer, account, alias, role...')).toBeInTheDocument()
+    expect(await screen.findByText('Catalog')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Search roles...')).toBeInTheDocument()
   })
 
-  it('renders search results ranked by target when typing', async () => {
+  it('renders search results when typing', async () => {
     render(<App />)
 
-    const input = await screen.findByPlaceholderText('Search customer, account, alias, role...')
+    const input = await screen.findByPlaceholderText('Search roles...')
     fireEvent.change(input, { target: { value: 'admin' } })
 
-    const matchesMeta = await screen.findByText(/matches/i)
-    expect(matchesMeta).toBeInTheDocument()
-    const adminResults = screen.getAllByText('Admin')
+    const adminResults = await screen.findAllByText('Admin')
     expect(adminResults.length).toBeGreaterThan(0)
   })
 
-  it('shows favorites with path context', async () => {
+  it('shows pinned targets with path context', async () => {
     render(<App />)
 
-    const favorites = await screen.findByText('Favorites')
-    const section = favorites.closest('section') as HTMLElement
-    expect(within(section).getByText(/Acme Corp \/ Production \/ Admin/)).toBeInTheDocument()
+    const pinned = await screen.findByText('Pinned')
+    const section = pinned.closest('section') as HTMLElement
+    expect(within(section).getByText('Admin')).toBeInTheDocument()
   })
 
-  it('has an "Edit Catalog" button to open the options page', async () => {
+  it('has a settings button to open the options page', async () => {
     render(<App />)
 
-    const editButton = await screen.findByText('Edit Catalog')
-    expect(editButton).toBeInTheDocument()
+    const settingsButton = await screen.findByTitle('Settings')
+    expect(settingsButton).toBeInTheDocument()
   })
 })

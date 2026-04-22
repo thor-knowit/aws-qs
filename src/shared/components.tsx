@@ -18,14 +18,14 @@ export const EMPTY_TARGET_DRAFT: TargetDraft = {
 }
 
 export function Badge({ children }: { children: ReactNode }) {
-  return <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.22em] text-zinc-300">{children}</span>
+  return <span className="inline-flex rounded border border-zinc-700 bg-zinc-800/60 px-1.5 py-0.5 text-[10px] text-zinc-400">{children}</span>
 }
 
 export function SectionTitle({ title, meta }: { title: string; meta?: string }) {
   return (
     <div className="mb-2 flex items-center justify-between">
-      <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">{title}</h2>
-      {meta ? <span className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">{meta}</span> : null}
+      <h2 className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">{title}</h2>
+      {meta ? <span className="text-[10px] text-zinc-600">{meta}</span> : null}
     </div>
   )
 }
@@ -35,7 +35,7 @@ export function TextField(props: InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={cn(
-        'w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-amber-300/40',
+        'w-full rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-zinc-500',
         props.className,
       )}
     />
@@ -47,7 +47,7 @@ export function SelectField(props: SelectHTMLAttributes<HTMLSelectElement>) {
     <select
       {...props}
       className={cn(
-        'w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-amber-300/40',
+        'w-full rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-[13px] text-zinc-100 outline-none focus:border-zinc-500',
         props.className,
       )}
     />
@@ -59,7 +59,7 @@ export function ActionButton({ children, className, ...props }: ButtonHTMLAttrib
     <button
       {...props}
       className={cn(
-        'rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium uppercase tracking-[0.2em] text-zinc-200 transition hover:border-amber-300/40 hover:bg-amber-300/10',
+        'rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-600 hover:bg-zinc-700 hover:text-zinc-100',
         className,
       )}
     >
