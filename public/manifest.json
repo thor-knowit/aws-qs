@@ -12,6 +12,7 @@
     "default_title": "AWS Quick Switch",
     "default_popup": "index.html"
   },
+  "options_page": "options.html",
   "background": {
     "service_worker": "background.js",
     "type": "module"
