@@ -11,6 +11,8 @@ import {
   TextField,
 } from '@/shared/components'
 import { ColorField } from '@/shared/ColorField'
+import { folderDraftSchema, targetDraftSchema } from '@/domain/schema'
+import { validateDraft } from '@/shared/validation'
 
 function useHashEditId(): string | null {
   const [editId, setEditId] = useState<string | null>(() => {
@@ -235,13 +237,27 @@ function FolderEditorPanel({ folderId }: { folderId: FolderId }) {
 
   const folder = state.catalog.foldersById[folderId]
   const [draft, setDraft] = useState<FolderDraft>(EMPTY_FOLDER_DRAFT)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!folder) return
     setDraft({ name: folder.name, parentId: folder.parentId, color: folder.color })
+    setErrors({})
   }, [folder])
 
   if (!folder) return <EmptyEditor />
+
+  function setField<K extends keyof FolderDraft>(field: K, value: FolderDraft[K]) {
+    setDraft((d) => ({ ...d, [field]: value }))
+    setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest })
+  }
+
+  function handleSave() {
+    const errs = validateDraft(folderDraftSchema, draft)
+    setErrors(errs)
+    if (Object.keys(errs).length > 0) return
+    updateFolder(folderId, draft)
+  }
 
   return (
     <div className="space-y-5">
@@ -253,22 +269,22 @@ function FolderEditorPanel({ folderId }: { folderId: FolderId }) {
       <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
         <label className="block space-y-1">
           <FieldLabel>Name</FieldLabel>
-          <TextField value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="Folder name" />
+          <TextField value={draft.name} onChange={(e) => setField('name', e.target.value)} placeholder="Folder name" error={errors.name} />
         </label>
 
         <div className="space-y-1">
           <FieldLabel>Color</FieldLabel>
-          <ColorField value={draft.color ?? ''} onChange={(color) => setDraft((d) => ({ ...d, color }))} />
+          <ColorField value={draft.color ?? ''} onChange={(color) => setField('color', color)} />
         </div>
 
         <FolderTreePicker
           value={draft.parentId}
-          onChange={(parentId) => setDraft((d) => ({ ...d, parentId }))}
+          onChange={(parentId) => setField('parentId', parentId)}
           excludeId={folderId}
         />
 
         <div className="flex gap-2 pt-1">
-          <ActionButton onClick={() => updateFolder(folderId, draft)} className="flex-1">Save Changes</ActionButton>
+          <ActionButton onClick={handleSave} className="flex-1">Save Changes</ActionButton>
           <ActionButton onClick={() => moveNode({ nodeId: folderId, nextParentId: draft.parentId })} className="flex-1">Move</ActionButton>
         </div>
       </div>
@@ -299,6 +315,7 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
 
   const target = state.catalog.targetsById[targetId]
   const [draft, setDraft] = useState<TargetDraft>(EMPTY_TARGET_DRAFT)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!target) return
@@ -310,9 +327,22 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
       roleName: target.roleName,
       destinationPath: target.destinationPath,
     })
+    setErrors({})
   }, [target])
 
   if (!target) return <EmptyEditor />
+
+  function setField<K extends keyof TargetDraft>(field: K, value: TargetDraft[K]) {
+    setDraft((d) => ({ ...d, [field]: value }))
+    setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest })
+  }
+
+  function handleSave() {
+    const errs = validateDraft(targetDraftSchema, draft)
+    setErrors(errs)
+    if (Object.keys(errs).length > 0) return
+    updateTarget(targetId, draft)
+  }
 
   const isFavorite = state.usage.favoriteTargetIds.includes(targetId)
   const pathLabel = getTargetPathLabel(state, targetId)
@@ -348,38 +378,38 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
       <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
         <label className="block space-y-1">
           <FieldLabel>Display Name</FieldLabel>
-          <TextField value={draft.displayName} onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))} placeholder="Admin" />
+          <TextField value={draft.displayName} onChange={(e) => setField('displayName', e.target.value)} placeholder="Admin" error={errors.displayName} />
         </label>
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1">
             <FieldLabel>Account ID</FieldLabel>
-            <TextField value={draft.accountId} onChange={(e) => setDraft((d) => ({ ...d, accountId: e.target.value }))} placeholder="123456789012" />
+            <TextField value={draft.accountId} onChange={(e) => setField('accountId', e.target.value)} placeholder="123456789012 or alias" error={errors.accountId} />
           </label>
 
           <label className="block space-y-1">
             <FieldLabel>Account Alias</FieldLabel>
-            <TextField value={draft.accountAlias ?? ''} onChange={(e) => setDraft((d) => ({ ...d, accountAlias: e.target.value }))} placeholder="customer-prod" />
+            <TextField value={draft.accountAlias ?? ''} onChange={(e) => setField('accountAlias', e.target.value)} placeholder="customer-prod" error={errors.accountAlias} />
           </label>
         </div>
 
         <label className="block space-y-1">
           <FieldLabel>Role Name</FieldLabel>
-          <TextField value={draft.roleName} onChange={(e) => setDraft((d) => ({ ...d, roleName: e.target.value }))} placeholder="AdministratorAccess" />
+          <TextField value={draft.roleName} onChange={(e) => setField('roleName', e.target.value)} placeholder="AdministratorAccess" error={errors.roleName} />
         </label>
 
         <label className="block space-y-1">
           <FieldLabel>Destination Path</FieldLabel>
-          <TextField value={draft.destinationPath ?? ''} onChange={(e) => setDraft((d) => ({ ...d, destinationPath: e.target.value }))} placeholder="/console/home" />
+          <TextField value={draft.destinationPath ?? ''} onChange={(e) => setField('destinationPath', e.target.value)} placeholder="/console/home" error={errors.destinationPath} />
         </label>
 
         <FolderTreePicker
           value={draft.parentId}
-          onChange={(parentId) => setDraft((d) => ({ ...d, parentId }))}
+          onChange={(parentId) => setField('parentId', parentId)}
         />
 
         <div className="flex gap-2 pt-1">
-          <ActionButton onClick={() => updateTarget(targetId, draft)} className="flex-1">Save Changes</ActionButton>
+          <ActionButton onClick={handleSave} className="flex-1">Save Changes</ActionButton>
           <ActionButton onClick={() => moveNode({ nodeId: targetId, nextParentId: draft.parentId })} className="flex-1">Move</ActionButton>
         </div>
       </div>
@@ -402,6 +432,25 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
 function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
   const createFolder = useAppStore((s) => s.createFolder)
   const [draft, setDraft] = useState<FolderDraft>(EMPTY_FOLDER_DRAFT)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  function setField<K extends keyof FolderDraft>(field: K, value: FolderDraft[K]) {
+    setDraft((d) => ({ ...d, [field]: value }))
+    setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest })
+  }
+
+  function handleCreate() {
+    const errs = validateDraft(folderDraftSchema, draft)
+    setErrors(errs)
+    if (Object.keys(errs).length > 0) return
+
+    createFolder(draft)
+    const folders = Object.values(useAppStore.getState().state.catalog.foldersById)
+    const created = folders.find((f) => f.name === draft.name)
+    if (created) onCreated(created.id)
+    setDraft(EMPTY_FOLDER_DRAFT)
+    setErrors({})
+  }
 
   return (
     <div className="space-y-5">
@@ -413,29 +462,20 @@ function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
       <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
         <label className="block space-y-1">
           <FieldLabel>Name</FieldLabel>
-          <TextField value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="Folder name" />
+          <TextField value={draft.name} onChange={(e) => setField('name', e.target.value)} placeholder="Folder name" error={errors.name} />
         </label>
 
         <div className="space-y-1">
           <FieldLabel>Color</FieldLabel>
-          <ColorField value={draft.color ?? ''} onChange={(color) => setDraft((d) => ({ ...d, color }))} />
+          <ColorField value={draft.color ?? ''} onChange={(color) => setField('color', color)} />
         </div>
 
         <FolderTreePicker
           value={draft.parentId}
-          onChange={(parentId) => setDraft((d) => ({ ...d, parentId }))}
+          onChange={(parentId) => setField('parentId', parentId)}
         />
 
-        <ActionButton
-          onClick={() => {
-            createFolder(draft)
-            const folders = Object.values(useAppStore.getState().state.catalog.foldersById)
-            const created = folders.find((f) => f.name === draft.name)
-            if (created) onCreated(created.id)
-            setDraft(EMPTY_FOLDER_DRAFT)
-          }}
-          className="w-full"
-        >
+        <ActionButton onClick={handleCreate} className="w-full">
           Create Folder
         </ActionButton>
       </div>
@@ -446,6 +486,25 @@ function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
 function NewTargetPanel({ onCreated }: { onCreated: (id: TargetId) => void }) {
   const createTarget = useAppStore((s) => s.createTarget)
   const [draft, setDraft] = useState<TargetDraft>(EMPTY_TARGET_DRAFT)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  function setField<K extends keyof TargetDraft>(field: K, value: TargetDraft[K]) {
+    setDraft((d) => ({ ...d, [field]: value }))
+    setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest })
+  }
+
+  function handleCreate() {
+    const errs = validateDraft(targetDraftSchema, draft)
+    setErrors(errs)
+    if (Object.keys(errs).length > 0) return
+
+    createTarget(draft)
+    const targets = Object.values(useAppStore.getState().state.catalog.targetsById)
+    const created = targets.find((t) => t.displayName === draft.displayName && t.accountId === draft.accountId)
+    if (created) onCreated(created.id)
+    setDraft(EMPTY_TARGET_DRAFT)
+    setErrors({})
+  }
 
   return (
     <div className="space-y-5">
@@ -457,46 +516,37 @@ function NewTargetPanel({ onCreated }: { onCreated: (id: TargetId) => void }) {
       <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
         <label className="block space-y-1">
           <FieldLabel>Display Name</FieldLabel>
-          <TextField value={draft.displayName} onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))} placeholder="Admin" />
+          <TextField value={draft.displayName} onChange={(e) => setField('displayName', e.target.value)} placeholder="Admin" error={errors.displayName} />
         </label>
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1">
             <FieldLabel>Account ID</FieldLabel>
-            <TextField value={draft.accountId} onChange={(e) => setDraft((d) => ({ ...d, accountId: e.target.value }))} placeholder="123456789012" />
+            <TextField value={draft.accountId} onChange={(e) => setField('accountId', e.target.value)} placeholder="123456789012 or alias" error={errors.accountId} />
           </label>
 
           <label className="block space-y-1">
             <FieldLabel>Account Alias</FieldLabel>
-            <TextField value={draft.accountAlias ?? ''} onChange={(e) => setDraft((d) => ({ ...d, accountAlias: e.target.value }))} placeholder="customer-prod" />
+            <TextField value={draft.accountAlias ?? ''} onChange={(e) => setField('accountAlias', e.target.value)} placeholder="customer-prod" error={errors.accountAlias} />
           </label>
         </div>
 
         <label className="block space-y-1">
           <FieldLabel>Role Name</FieldLabel>
-          <TextField value={draft.roleName} onChange={(e) => setDraft((d) => ({ ...d, roleName: e.target.value }))} placeholder="AdministratorAccess" />
+          <TextField value={draft.roleName} onChange={(e) => setField('roleName', e.target.value)} placeholder="AdministratorAccess" error={errors.roleName} />
         </label>
 
         <label className="block space-y-1">
           <FieldLabel>Destination Path</FieldLabel>
-          <TextField value={draft.destinationPath ?? ''} onChange={(e) => setDraft((d) => ({ ...d, destinationPath: e.target.value }))} placeholder="/console/home" />
+          <TextField value={draft.destinationPath ?? ''} onChange={(e) => setField('destinationPath', e.target.value)} placeholder="/console/home" error={errors.destinationPath} />
         </label>
 
         <FolderTreePicker
           value={draft.parentId}
-          onChange={(parentId) => setDraft((d) => ({ ...d, parentId }))}
+          onChange={(parentId) => setField('parentId', parentId)}
         />
 
-        <ActionButton
-          onClick={() => {
-            createTarget(draft)
-            const targets = Object.values(useAppStore.getState().state.catalog.targetsById)
-            const created = targets.find((t) => t.displayName === draft.displayName && t.accountId === draft.accountId)
-            if (created) onCreated(created.id)
-            setDraft(EMPTY_TARGET_DRAFT)
-          }}
-          className="w-full"
-        >
+        <ActionButton onClick={handleCreate} className="w-full">
           Create Target
         </ActionButton>
       </div>

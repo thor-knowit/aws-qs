@@ -27,14 +27,45 @@ describe('catalog mutations', () => {
   })
 
   it('validates target account id format', () => {
+    // Too short (under 3 chars)
     expect(() =>
       createTarget(defaultAppState, {
         displayName: 'Bad',
         parentId: null,
-        accountId: 'not-an-id',
+        accountId: 'ab',
         roleName: 'Role',
       }),
     ).toThrow()
+
+    // Invalid characters (uppercase, spaces)
+    expect(() =>
+      createTarget(defaultAppState, {
+        displayName: 'Bad',
+        parentId: null,
+        accountId: 'INVALID ID!',
+        roleName: 'Role',
+      }),
+    ).toThrow()
+
+    // Valid 12-digit account ID should pass
+    expect(() =>
+      createTarget(defaultAppState, {
+        displayName: 'Good',
+        parentId: null,
+        accountId: '123456789012',
+        roleName: 'Role',
+      }),
+    ).not.toThrow()
+
+    // Valid account alias should pass
+    expect(() =>
+      createTarget(defaultAppState, {
+        displayName: 'Good',
+        parentId: null,
+        accountId: 'my-account-alias',
+        roleName: 'Role',
+      }),
+    ).not.toThrow()
   })
 
   it('creates a target and adds it to the parent folder', () => {

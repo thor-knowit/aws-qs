@@ -30,15 +30,19 @@ export function SectionTitle({ title, meta }: { title: string; meta?: string }) 
   )
 }
 
-export function TextField(props: InputHTMLAttributes<HTMLInputElement>) {
+export function TextField({ error, ...props }: InputHTMLAttributes<HTMLInputElement> & { error?: string }) {
   return (
-    <input
-      {...props}
-      className={cn(
-        'w-full rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-zinc-500',
-        props.className,
-      )}
-    />
+    <div>
+      <input
+        {...props}
+        className={cn(
+          'w-full rounded border bg-zinc-900 px-2.5 py-1.5 text-[13px] text-zinc-100 outline-none placeholder:text-zinc-600',
+          error ? 'border-rose-700/70 focus:border-rose-500' : 'border-zinc-700 focus:border-zinc-500',
+          props.className,
+        )}
+      />
+      {error ? <p className="mt-0.5 text-[11px] text-rose-400">{error}</p> : null}
+    </div>
   )
 }
 

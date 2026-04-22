@@ -22,7 +22,7 @@ const targetSchema = z.object({
   type: z.literal('target'),
   parentId: z.string().nullable(),
   displayName: z.string().min(1),
-  accountId: z.string().regex(/^\d{12}$/),
+  accountId: z.string().regex(/^(\d{12}|[a-z0-9][a-z0-9-]{1,61}[a-z0-9])$/),
   accountAlias: z.string().optional(),
   roleName: z.string().min(1),
   destinationPath: z.string().optional(),
@@ -64,7 +64,7 @@ export const folderDraftSchema = z.object({
 export const targetDraftSchema = z.object({
   displayName: z.string().trim().min(1),
   parentId: z.string().nullable(),
-  accountId: z.string().regex(/^\d{12}$/),
+  accountId: z.string().regex(/^(\d{12}|[a-z0-9][a-z0-9-]{1,61}[a-z0-9])$/),
   accountAlias: z.string().optional(),
   roleName: z.string().trim().min(1),
   destinationPath: z.string().optional(),
