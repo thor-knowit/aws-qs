@@ -3,6 +3,12 @@
   "name": "AWS Quick Switch",
   "version": "0.2.0",
   "description": "Quickly switch across deeply grouped AWS accounts and roles from a persistent hybrid tree + search popup.",
+  "icons": {
+    "16": "extension-icon-16.png",
+    "32": "extension-icon-32.png",
+    "48": "extension-icon-48.png",
+    "128": "extension-icon-128.png"
+  },
   "permissions": ["storage", "tabs"],
   "host_permissions": [
     "https://signin.aws.amazon.com/*",
@@ -10,7 +16,12 @@
   ],
   "action": {
     "default_title": "AWS Quick Switch",
-    "default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "extension-icon-16.png",
+      "32": "extension-icon-32.png",
+      "48": "extension-icon-48.png"
+    }
   },
   "options_page": "options.html",
   "background": {
