@@ -1,73 +1,63 @@
-# React + TypeScript + Vite
+# AWS Quick Switch
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AWS Quick Switch is a Chrome extension for keeping a small catalog of AWS switch-role targets and opening them quickly from a popup.
 
-Currently, two official plugins are available:
+## What It Does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Search targets by display name, role name, account ID, account alias, or folder path.
+- Browse targets in a nested folder tree.
+- Pin frequently used targets and keep a recent list in the popup.
+- Open a target in a new tab using AWS Switch Role.
+- Set an optional destination path so a target opens on a specific AWS page after switching.
+- Manage folders and targets from the settings page.
+- Import and export your saved data as JSON.
 
-## React Compiler
+## Install
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Run `npm install`.
+2. Run `npm run build`.
+3. Open `chrome://extensions`.
+4. Enable Developer mode.
+5. Choose `Load unpacked` and select the `dist` folder.
 
-## Expanding the ESLint configuration
+## Configure Targets
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Open the popup, then open Settings from the gear icon.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+For each target you can set:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- `Display Name`: the label shown in the popup.
+- `Account ID`: the 12-digit AWS account ID or account alias used for switching.
+- `Account Alias`: an optional label to make search and browsing clearer.
+- `Role Name`: the AWS role to switch into.
+- `Destination Path`: an optional AWS Console path such as `/console/home`.
+- `Parent Folder`: optional folder placement.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+The extension starts with sample data the first time it is installed. Replace or remove it as needed.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Use
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Open the popup from the extension icon.
+- Type in the search box to filter targets instantly.
+- Use `Arrow Up` / `Arrow Down` to move through search results.
+- Press `Enter` to open the selected target in a new tab.
+- Press `Escape` to clear the search.
+- Use the star to pin or unpin a target.
+- Use the edit icon to jump straight to that folder or target in Settings.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+The extension also defines a suggested shortcut:
+
+- Windows/Linux: `Ctrl+Shift+A`
+- macOS: `Command+Shift+A`
+
+You can change shortcuts in `chrome://extensions/shortcuts`.
+
+## Settings
+
+The settings page lets you:
+
+- Create, edit, move, reorder, and delete folders.
+- Create, edit, move, reorder, pin, launch, and delete targets.
+- Import or export JSON backups.
+
+Export and import include both the catalog and usage data, including pinned and recent targets.
