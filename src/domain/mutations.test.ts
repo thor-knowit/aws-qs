@@ -10,6 +10,7 @@ import {
   moveNode,
   toggleFavorite,
   toggleFolderExpanded,
+  updateSwitchRolePreferences,
   updateFolder,
 } from '@/domain/mutations'
 
@@ -126,6 +127,29 @@ describe('catalog mutations', () => {
     expect(withoutFav.usage.favoriteTargetIds).not.toContain('target-acme-readonly')
   })
 
+  it('updates switch-role behavior', () => {
+    const next = updateSwitchRolePreferences(defaultAppState, {
+      autoSubmit: false,
+    })
+
+    expect(next.preferences.switchRole.autoSubmit).toBe(false)
+  })
+
+  it('stores optional source-session matching per target', () => {
+    const next = createTarget(defaultAppState, {
+      displayName: 'Auditor',
+      parentId: 'folder-beta-eu',
+      accountId: '999888777666',
+      roleName: 'AuditRole',
+      sourceAccount: '111122223333',
+      sourceIdentity: 'MOCAdmin/thor.li@knowit.no',
+    })
+
+    const created = Object.values(next.catalog.targetsById).find((t) => t.displayName === 'Auditor')
+    expect(created?.sourceAccount).toBe('111122223333')
+    expect(created?.sourceIdentity).toBe('MOCAdmin/thor.li@knowit.no')
+  })
+
   it('renaming a folder preserves its expanded state', () => {
     const expanded = toggleFolderExpanded(defaultAppState, 'folder-acme-stage')
     const renamed = updateFolder(expanded, 'folder-acme-stage', {
@@ -145,6 +169,7 @@ describe('catalog mutations', () => {
     expect(Object.keys(restored.catalog.targetsById).sort()).toEqual(
       Object.keys(defaultAppState.catalog.targetsById).sort(),
     )
+    expect(restored.preferences.switchRole.autoSubmit).toBe(true)
     expect(restored.ui.expandedFolderIds).toEqual([])
   })
 

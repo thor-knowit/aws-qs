@@ -14,6 +14,7 @@ import {
   setSearchQuery,
   toggleFavorite,
   toggleFolderExpanded,
+  updateSwitchRolePreferences,
   updateFolder,
   updateTarget,
 } from '@/domain/mutations'
@@ -25,9 +26,14 @@ import type {
   MoveNodeDraft,
   NodeId,
   SearchResult,
+  SwitchRolePreferencesDraft,
   TargetDraft,
   TargetId,
 } from '@/shared/types'
+
+interface ActivateTargetOptions {
+  manual?: boolean
+}
 
 interface AppStore {
   hydrated: boolean
@@ -36,7 +42,8 @@ interface AppStore {
   setSearchQuery: (query: string) => void
   toggleFolderExpanded: (folderId: FolderId) => void
   toggleFavorite: (targetId: TargetId) => void
-  activateTarget: (targetId: TargetId) => Promise<void>
+  activateTarget: (targetId: TargetId, options?: ActivateTargetOptions) => Promise<void>
+  updateSwitchRolePreferences: (draft: SwitchRolePreferencesDraft) => void
   createFolder: (draft: FolderDraft) => void
   updateFolder: (folderId: FolderId, draft: FolderDraft) => void
   createTarget: (draft: TargetDraft) => void
@@ -78,6 +85,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const next = toggleFavorite(get().state, targetId)
     commit(set, next)
   },
+  updateSwitchRolePreferences(draft) {
+    const next = updateSwitchRolePreferences(get().state, draft)
+    commit(set, next)
+  },
   createFolder(draft) {
     const next = createFolder(get().state, draft)
     commit(set, next)
@@ -117,7 +128,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const next = importCatalogState(get().state, raw)
     commit(set, next)
   },
-  async activateTarget(targetId) {
+  async activateTarget(targetId, options) {
     const next = selectTarget(get().state, targetId)
     set({ state: next })
     await persist(next)
@@ -126,6 +137,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!target) return
 
     const url = buildAwsSwitchUrl(target)
+    const switchRolePreferences = next.preferences.switchRole
+    const automation =
+      switchRolePreferences.autoSubmit && !options?.manual
+        ? {
+            sourceAccount: target.sourceAccount,
+            sourceRoleName: target.sourceIdentity,
+          }
+        : undefined
+
+    if (globalThis.chrome?.runtime?.sendMessage) {
+      try {
+        await globalThis.chrome.runtime.sendMessage({
+          type: 'aws-quick-switch/launch-target',
+          url,
+          automation,
+        })
+        return
+      } catch {
+        // Fall through to direct tab/window launch for local preview or stale workers.
+      }
+    }
+
     if (globalThis.chrome?.tabs?.create) {
       const [activeTab] = await globalThis.chrome.tabs.query({ active: true, currentWindow: true })
       const index = activeTab?.index != null ? activeTab.index + 1 : undefined

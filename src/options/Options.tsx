@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react'
-import { APP_NAME } from '@/shared/constants'
-import type { FolderDraft, FolderId, NodeId, TargetDraft, TargetId } from '@/shared/types'
+import { APP_NAME, EMPTY_FOLDER_DRAFT, EMPTY_TARGET_DRAFT } from '@/shared/constants'
+import type { FolderDraft, FolderId, NodeId, SwitchRolePreferencesDraft, TargetDraft, TargetId } from '@/shared/types'
 import { getNodeChildren, getTarget, getTargetPathLabel, isFolderId, isTargetId } from '@/domain/catalog'
 import { useAppStore } from '@/popup/store'
 import { cn } from '@/shared/utils'
-import {
-  ActionButton,
-  EMPTY_FOLDER_DRAFT,
-  EMPTY_TARGET_DRAFT,
-  TextField,
-} from '@/shared/components'
+import { ActionButton, TextField } from '@/shared/components'
 import { ColorField } from '@/shared/ColorField'
-import { folderDraftSchema, targetDraftSchema } from '@/domain/schema'
+import { folderDraftSchema, switchRolePreferencesDraftSchema, targetDraftSchema } from '@/domain/schema'
 import { validateDraft } from '@/shared/validation'
 
 function useHashEditId(): string | null {
@@ -150,6 +145,12 @@ function FieldLabel({ children }: { children: string }) {
   return <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">{children}</span>
 }
 
+function withoutFieldError(errors: Record<string, string>, field: string): Record<string, string> {
+  const next = { ...errors }
+  delete next[field]
+  return next
+}
+
 /* ── Folder tree picker (replaces flat <select>) ── */
 
 function FolderPickerNode({ folderId, selectedId, excludeId, onSelect }: {
@@ -239,17 +240,22 @@ function FolderEditorPanel({ folderId }: { folderId: FolderId }) {
   const [draft, setDraft] = useState<FolderDraft>(EMPTY_FOLDER_DRAFT)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    if (!folder) return
-    setDraft({ name: folder.name, parentId: folder.parentId, color: folder.color })
-    setErrors({})
-  }, [folder])
+  // Reset the draft when a different folder is selected (adjust state during
+  // render instead of in an effect to avoid a cascading re-render).
+  const [prevFolder, setPrevFolder] = useState(folder)
+  if (folder !== prevFolder) {
+    setPrevFolder(folder)
+    if (folder) {
+      setDraft({ name: folder.name, parentId: folder.parentId, color: folder.color })
+      setErrors({})
+    }
+  }
 
   if (!folder) return <EmptyEditor />
 
   function setField<K extends keyof FolderDraft>(field: K, value: FolderDraft[K]) {
     setDraft((d) => ({ ...d, [field]: value }))
-    setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest })
+    setErrors((prev) => withoutFieldError(prev, field))
   }
 
   function handleSave() {
@@ -317,24 +323,31 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
   const [draft, setDraft] = useState<TargetDraft>(EMPTY_TARGET_DRAFT)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    if (!target) return
-    setDraft({
-      displayName: target.displayName,
-      parentId: target.parentId,
-      accountId: target.accountId,
-      accountAlias: target.accountAlias,
-      roleName: target.roleName,
-      destinationPath: target.destinationPath,
-    })
-    setErrors({})
-  }, [target])
+  // Reset the draft when a different target is selected (adjust state during
+  // render instead of in an effect to avoid a cascading re-render).
+  const [prevTarget, setPrevTarget] = useState(target)
+  if (target !== prevTarget) {
+    setPrevTarget(target)
+    if (target) {
+      setDraft({
+        displayName: target.displayName,
+        parentId: target.parentId,
+        accountId: target.accountId,
+        accountAlias: target.accountAlias,
+        roleName: target.roleName,
+        destinationPath: target.destinationPath,
+        sourceAccount: target.sourceAccount,
+        sourceIdentity: target.sourceIdentity,
+      })
+      setErrors({})
+    }
+  }
 
   if (!target) return <EmptyEditor />
 
   function setField<K extends keyof TargetDraft>(field: K, value: TargetDraft[K]) {
     setDraft((d) => ({ ...d, [field]: value }))
-    setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest })
+    setErrors((prev) => withoutFieldError(prev, field))
   }
 
   function handleSave() {
@@ -366,8 +379,9 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
               {isFavorite ? '★ Pinned' : '☆ Pin'}
             </button>
             <button
-              onClick={() => activateTarget(targetId)}
+              onClick={(event) => { void activateTarget(targetId, { manual: event.shiftKey }) }}
               className="rounded bg-zinc-100 px-3 py-1 text-[11px] font-medium text-zinc-900 transition hover:bg-white"
+              title="Hold Shift to use the manual AWS switch-role page."
             >
               Switch
             </button>
@@ -403,6 +417,24 @@ function TargetEditorPanel({ targetId }: { targetId: TargetId }) {
           <TextField value={draft.destinationPath ?? ''} onChange={(e) => setField('destinationPath', e.target.value)} placeholder="/console/home" error={errors.destinationPath} />
         </label>
 
+        <div className="space-y-2 rounded border border-zinc-800 bg-zinc-950/40 p-3">
+          <div>
+            <FieldLabel>Source Session</FieldLabel>
+            <p className="mt-0.5 text-[11px] text-zinc-500">Optional. Used only when AWS asks which active session to switch from.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-1">
+              <FieldLabel>Source Account</FieldLabel>
+              <TextField value={draft.sourceAccount ?? ''} onChange={(e) => setField('sourceAccount', e.target.value)} placeholder="768236070178 or alias" error={errors.sourceAccount} />
+            </label>
+
+            <label className="block space-y-1">
+              <FieldLabel>Source Identity</FieldLabel>
+              <TextField value={draft.sourceIdentity ?? ''} onChange={(e) => setField('sourceIdentity', e.target.value)} placeholder="MOCAdmin/thor.li@knowit.no" error={errors.sourceIdentity} />
+            </label>
+          </div>
+        </div>
+
         <FolderTreePicker
           value={draft.parentId}
           onChange={(parentId) => setField('parentId', parentId)}
@@ -436,7 +468,7 @@ function NewFolderPanel({ onCreated }: { onCreated: (id: FolderId) => void }) {
 
   function setField<K extends keyof FolderDraft>(field: K, value: FolderDraft[K]) {
     setDraft((d) => ({ ...d, [field]: value }))
-    setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest })
+    setErrors((prev) => withoutFieldError(prev, field))
   }
 
   function handleCreate() {
@@ -490,7 +522,7 @@ function NewTargetPanel({ onCreated }: { onCreated: (id: TargetId) => void }) {
 
   function setField<K extends keyof TargetDraft>(field: K, value: TargetDraft[K]) {
     setDraft((d) => ({ ...d, [field]: value }))
-    setErrors((prev) => { const { [field]: _, ...rest } = prev; return rest })
+    setErrors((prev) => withoutFieldError(prev, field))
   }
 
   function handleCreate() {
@@ -540,6 +572,24 @@ function NewTargetPanel({ onCreated }: { onCreated: (id: TargetId) => void }) {
           <FieldLabel>Destination Path</FieldLabel>
           <TextField value={draft.destinationPath ?? ''} onChange={(e) => setField('destinationPath', e.target.value)} placeholder="/console/home" error={errors.destinationPath} />
         </label>
+
+        <div className="space-y-2 rounded border border-zinc-800 bg-zinc-950/40 p-3">
+          <div>
+            <FieldLabel>Source Session</FieldLabel>
+            <p className="mt-0.5 text-[11px] text-zinc-500">Optional. Used only when AWS asks which active session to switch from.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-1">
+              <FieldLabel>Source Account</FieldLabel>
+              <TextField value={draft.sourceAccount ?? ''} onChange={(e) => setField('sourceAccount', e.target.value)} placeholder="768236070178 or alias" error={errors.sourceAccount} />
+            </label>
+
+            <label className="block space-y-1">
+              <FieldLabel>Source Identity</FieldLabel>
+              <TextField value={draft.sourceIdentity ?? ''} onChange={(e) => setField('sourceIdentity', e.target.value)} placeholder="MOCAdmin/thor.li@knowit.no" error={errors.sourceIdentity} />
+            </label>
+          </div>
+        </div>
 
         <FolderTreePicker
           value={draft.parentId}
@@ -600,6 +650,55 @@ function ImportExportPanel() {
   )
 }
 
+function SwitchRolePreferencesPanel() {
+  const preferences = useAppStore((s) => s.state.preferences.switchRole)
+  const updateSwitchRolePreferences = useAppStore((s) => s.updateSwitchRolePreferences)
+  const [draft, setDraft] = useState<SwitchRolePreferencesDraft>(() => ({ ...preferences }))
+  const [status, setStatus] = useState<string | null>(null)
+
+  function setField<K extends keyof SwitchRolePreferencesDraft>(field: K, value: SwitchRolePreferencesDraft[K]) {
+    setDraft((current) => ({ ...current, [field]: value }))
+    setStatus(null)
+  }
+
+  function handleSave() {
+    const errs = validateDraft(switchRolePreferencesDraftSchema, draft)
+    if (Object.keys(errs).length > 0) return
+
+    updateSwitchRolePreferences(draft)
+    setStatus('Saved switch-role defaults.')
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-[15px] font-medium text-zinc-100">Switch Defaults</h2>
+        <p className="mt-0.5 text-[12px] text-zinc-500">Set global switch-role behavior. Source sessions are configured per target.</p>
+      </div>
+
+      <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
+        <label className="flex items-start gap-2 rounded border border-zinc-800 bg-zinc-950/50 px-3 py-2">
+          <input
+            type="checkbox"
+            checked={draft.autoSubmit}
+            onChange={(event) => setField('autoSubmit', event.target.checked)}
+            className="mt-0.5 h-3.5 w-3.5 accent-zinc-100"
+          />
+          <span>
+            <span className="block text-[13px] text-zinc-200">Auto-submit Switch Role</span>
+            <span className="block text-[11px] text-zinc-500">Targets can optionally choose a source session. Hold Shift while selecting a target to leave the AWS page manual.</span>
+          </span>
+        </label>
+
+        <ActionButton onClick={handleSave} className="w-full">
+          Save Switch Behavior
+        </ActionButton>
+        {status ? <p className="text-[11px] text-emerald-400">{status}</p> : null}
+      </div>
+    </div>
+  )
+}
+
 function EmptyEditor() {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
@@ -617,6 +716,7 @@ type EditorView =
   | { kind: 'new-folder' }
   | { kind: 'new-target' }
   | { kind: 'import-export' }
+  | { kind: 'switch-preferences' }
   | { kind: 'empty' }
 
 export default function Options() {
@@ -631,16 +731,18 @@ export default function Options() {
     void initialize()
   }, [initialize])
 
-  // Sync hash-based deep link into view once hydrated
-  useEffect(() => {
-    if (!hydrated || !hashEditId) return
-
+  // Sync hash-based deep link into view once hydrated (adjust state during render
+  // instead of in an effect; retries until the id appears in the loaded catalog).
+  const [syncedHash, setSyncedHash] = useState<string | null>(null)
+  if (hydrated && hashEditId && hashEditId !== syncedHash) {
     if (hashEditId in state.catalog.foldersById) {
+      setSyncedHash(hashEditId)
       setView({ kind: 'folder', id: hashEditId })
     } else if (hashEditId in state.catalog.targetsById) {
+      setSyncedHash(hashEditId)
       setView({ kind: 'target', id: hashEditId })
     }
-  }, [hydrated, hashEditId, state.catalog.foldersById, state.catalog.targetsById])
+  }
 
   function handleSelect(id: NodeId) {
     if (isFolderId(state, id)) {
@@ -676,7 +778,10 @@ export default function Options() {
             <h1 className="text-[14px] font-medium text-zinc-200">{APP_NAME}</h1>
             <p className="text-[10px] uppercase tracking-widest text-zinc-600">Settings</p>
           </div>
-          <ActionButton onClick={() => setView({ kind: 'import-export' })}>Import / Export</ActionButton>
+          <div className="flex gap-2">
+            <ActionButton onClick={() => setView({ kind: 'switch-preferences' })}>Switch Defaults</ActionButton>
+            <ActionButton onClick={() => setView({ kind: 'import-export' })}>Import / Export</ActionButton>
+          </div>
         </header>
 
         {/* Editor area */}
@@ -686,6 +791,7 @@ export default function Options() {
           {view.kind === 'new-folder' ? <NewFolderPanel onCreated={(id) => { setView({ kind: 'folder', id }); globalThis.history.replaceState(null, '', `#edit=${id}`) }} /> : null}
           {view.kind === 'new-target' ? <NewTargetPanel onCreated={(id) => { setView({ kind: 'target', id }); globalThis.history.replaceState(null, '', `#edit=${id}`) }} /> : null}
           {view.kind === 'import-export' ? <ImportExportPanel /> : null}
+          {view.kind === 'switch-preferences' ? <SwitchRolePreferencesPanel /> : null}
           {view.kind === 'empty' ? <EmptyEditor /> : null}
         </div>
       </main>

@@ -5,6 +5,8 @@ import type {
   CatalogState,
   FolderDraft,
   FolderNode,
+  PreferencesState,
+  SwitchRolePreferencesDraft,
   TargetDraft,
   TargetNode,
 } from '@/shared/types'
@@ -26,6 +28,8 @@ const targetSchema = z.object({
   accountAlias: z.string().optional(),
   roleName: z.string().min(1),
   destinationPath: z.string().optional(),
+  sourceAccount: z.string().optional(),
+  sourceIdentity: z.string().optional(),
 })
 
 const catalogSchema = z.object({
@@ -42,6 +46,16 @@ const usageSchema = z.object({
   lastLaunchedAtByTargetId: z.record(z.string(), z.string()),
 })
 
+const switchRolePreferencesSchema = z.object({
+  autoSubmit: z.boolean().default(true),
+})
+
+const preferencesSchema = z.object({
+  switchRole: switchRolePreferencesSchema.default({
+    autoSubmit: true,
+  }),
+}) satisfies z.ZodType<PreferencesState>
+
 const uiSchema = z.object({
   expandedFolderIds: z.array(z.string()),
   searchQuery: z.string(),
@@ -52,6 +66,11 @@ export const appStorageSchema = z.object({
   schemaVersion: z.number().int().default(STORAGE_VERSION),
   catalog: catalogSchema,
   usage: usageSchema,
+  preferences: preferencesSchema.default({
+    switchRole: {
+      autoSubmit: true,
+    },
+  }),
   ui: uiSchema,
 })
 
@@ -68,7 +87,13 @@ export const targetDraftSchema = z.object({
   accountAlias: z.string().optional(),
   roleName: z.string().trim().min(1),
   destinationPath: z.string().optional(),
+  sourceAccount: z.string().trim().optional(),
+  sourceIdentity: z.string().trim().optional(),
 }) satisfies z.ZodType<TargetDraft>
+
+export const switchRolePreferencesDraftSchema = z.object({
+  autoSubmit: z.boolean(),
+}) satisfies z.ZodType<SwitchRolePreferencesDraft>
 
 function createFolder(id: string, name: string, parentId: string | null, color?: string): FolderNode {
   return { id, type: 'folder', name, parentId, color }
@@ -82,6 +107,8 @@ function createTarget(
   roleName: string,
   accountAlias?: string,
   destinationPath?: string,
+  sourceAccount?: string,
+  sourceIdentity?: string,
 ): TargetNode {
   return {
     id,
@@ -92,6 +119,8 @@ function createTarget(
     accountAlias,
     roleName,
     destinationPath,
+    sourceAccount,
+    sourceIdentity,
   }
 }
 
@@ -168,6 +197,11 @@ export const defaultAppState: AppStorageState = {
       'target-acme-readonly': '2026-04-21T15:00:00.000Z',
       'target-acme-devops': '2026-04-22T08:45:00.000Z',
       'target-beta-support': '2026-04-20T14:15:00.000Z',
+    },
+  },
+  preferences: {
+    switchRole: {
+      autoSubmit: true,
     },
   },
   ui: {

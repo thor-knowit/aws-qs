@@ -21,6 +21,8 @@ export interface TargetNode {
   accountAlias?: string
   roleName: string
   destinationPath?: string
+  sourceAccount?: string
+  sourceIdentity?: string
 }
 
 export interface CatalogState {
@@ -37,6 +39,14 @@ export interface UsageState {
   lastLaunchedAtByTargetId: Record<TargetId, string>
 }
 
+export interface SwitchRolePreferences {
+  autoSubmit: boolean
+}
+
+export interface PreferencesState {
+  switchRole: SwitchRolePreferences
+}
+
 export interface UiState {
   expandedFolderIds: FolderId[]
   searchQuery: string
@@ -47,6 +57,7 @@ export interface AppStorageState {
   schemaVersion: number
   catalog: CatalogState
   usage: UsageState
+  preferences: PreferencesState
   ui: UiState
 }
 
@@ -74,6 +85,12 @@ export interface TargetDraft {
   accountAlias?: string
   roleName: string
   destinationPath?: string
+  sourceAccount?: string
+  sourceIdentity?: string
+}
+
+export interface SwitchRolePreferencesDraft {
+  autoSubmit: boolean
 }
 
 export interface MoveNodeDraft {
