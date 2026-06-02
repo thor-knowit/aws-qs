@@ -21,5 +21,6 @@ describe('catalog domain', () => {
     expect(url).toContain('https://signin.aws.amazon.com/switchrole')
     expect(url).toContain('account=123456789012')
     expect(url).toContain('roleName=AdministratorAccess')
+    expect(url).toContain('redirect_uri=https%3A%2F%2Fconsole.aws.amazon.com%2Fconsole%2Fhome')
   })
 })

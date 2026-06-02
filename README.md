@@ -8,6 +8,7 @@ AWS Quick Switch is a Chrome extension for keeping a small catalog of AWS switch
 - Browse targets in a nested folder tree.
 - Pin frequently used targets and keep a recent list in the popup.
 - Open a target in a new tab using AWS Switch Role.
+- Optionally auto-submit the AWS Switch Role page with per-target source-session matching.
 - Set an optional destination path so a target opens on a specific AWS page after switching.
 - Manage folders and targets from the settings page.
 - Import and export your saved data as JSON.
@@ -31,6 +32,7 @@ For each target you can set:
 - `Account Alias`: an optional label to make search and browsing clearer.
 - `Role Name`: the AWS role to switch into.
 - `Destination Path`: an optional AWS Console path such as `/console/home`.
+- `Source Account` / `Source Identity`: optional text used to choose the AWS session to switch from when multiple sessions are active.
 - `Parent Folder`: optional folder placement.
 
 The extension starts with sample data the first time it is installed. Replace or remove it as needed.
@@ -58,6 +60,15 @@ The settings page lets you:
 
 - Create, edit, move, reorder, and delete folders.
 - Create, edit, move, reorder, pin, launch, and delete targets.
+- Configure global switch behavior, and optional source-session matching per target.
 - Import or export JSON backups.
 
 Export and import include both the catalog and usage data, including pinned and recent targets.
+
+## Source Sessions
+
+Open Settings and choose a target to set its optional `Source Account` and `Source Identity`. The account can be written with or without AWS's dashes. When auto-submit is enabled, selecting that target opens the AWS Switch Role page, chooses the matching source card if AWS presents one, and clicks `Switch Role`.
+
+Targets without source-session values do not guess between multiple active AWS sessions. If AWS asks which session to switch from, the page remains available for manual selection.
+
+Hold `Shift` while clicking a target or pressing `Enter` in search to leave the AWS Switch Role page manual for that launch.

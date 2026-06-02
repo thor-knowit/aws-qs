@@ -157,7 +157,10 @@ export function ColorField({
   const effectiveValue = value || defaultColor
   const pickerHex = toPickerHex(effectiveValue, defaultColor)
 
-  // Sync HSL draft from value — skip when the change came from the HSL inputs
+  // Sync the HSL draft when the incoming value changes, skipping echoes of our
+  // own edits (guarded by hslInputActive). This genuinely belongs in an effect:
+  // the render-phase alternative would have to read and write the ref during
+  // render, which React disallows. The setState is intentional and loop-safe.
   useEffect(() => {
     if (hslInputActive.current) {
       hslInputActive.current = false
@@ -165,6 +168,7 @@ export function ColorField({
     }
     const parsed = parseColor(effectiveValue)
     if (parsed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- guarded one-way sync from props; see comment above
       setHslDraft({
         h: String(parsed.h),
         s: String(parsed.s),

@@ -1,0 +1,65 @@
+name: Pack CRX
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write          # needed for gh release create/delete + tag move
+
+concurrency:
+  group: pack-crx-latest   # serialize pushes racing on the rolling release
+  cancel-in-progress: true
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22   # crx3 requires >=22; bump to 24 to match local dev
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build (type-check + bundle)
+        run: npm run build
+
+      - name: Restore signing key
+        env:
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+        run: |
+          if [ -z "$CRX_PRIVATE_KEY" ]; then
+            echo "::error::CRX_PRIVATE_KEY secret is missing or empty. Refusing to pack — crx3 would silently generate a NEW key and change the extension ID."
+            exit 1
+          fi
+          printf '%s\n' "$CRX_PRIVATE_KEY" > key.pem
+
+      - name: Pack .crx
+        run: npx crx3 dist -p key.pem -o aws-qs.crx
+
+      - name: Remove signing key
+        if: always()
+        run: rm -f key.pem
+
+      - name: Publish rolling "latest" release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest aws-qs.crx \
+            --title "Latest build (main)" \
+            --notes "Automated build from \`${GITHUB_SHA::7}\` on $(date -u +'%Y-%m-%d %H:%M UTC'). Download \`aws-qs.crx\` and drag it into chrome://extensions (Developer mode)." \
+            --latest \
+            --target "$GITHUB_SHA"

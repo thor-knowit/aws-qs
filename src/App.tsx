@@ -3,7 +3,7 @@ import type { FolderId, NodeId, TargetId } from '@/shared/types'
 import { getFolder, getNodeChildren, getTarget, isFolderId, isTargetId, searchCatalog } from '@/domain/catalog'
 import { useAppStore } from '@/popup/store'
 import { cn } from '@/shared/utils'
-import { openEditorForNode, openOptionsPage } from '@/shared/components'
+import { openEditorForNode, openOptionsPage } from '@/shared/navigation'
 import './index.css'
 
 /* ── Search ── */
@@ -17,9 +17,13 @@ function SearchPanel() {
   const toggleFavorite = useAppStore((store) => store.toggleFavorite)
   const [activeIndex, setActiveIndex] = useState(0)
 
-  useEffect(() => {
+  // Reset the highlighted row whenever the query changes (adjust state during
+  // render instead of in an effect to avoid a cascading re-render).
+  const [prevQuery, setPrevQuery] = useState(query)
+  if (query !== prevQuery) {
+    setPrevQuery(query)
     setActiveIndex(0)
-  }, [query])
+  }
 
   const targetResults = useMemo(() => results.filter((r) => r.type === 'target'), [results])
 
@@ -40,7 +44,7 @@ function SearchPanel() {
               const hit = targetResults[activeIndex]
               if (hit) {
                 event.preventDefault()
-                void activateTarget(hit.id as TargetId)
+                void activateTarget(hit.id as TargetId, { manual: event.shiftKey })
               }
             } else if (event.key === 'Escape') {
               setQuery('')
@@ -72,7 +76,11 @@ function SearchPanel() {
             return (
               <button
                 key={result.id}
-                onClick={() => result.type === 'target' && activateTarget(result.id as TargetId)}
+                onClick={(event) => {
+                  if (result.type === 'target') {
+                    void activateTarget(result.id as TargetId, { manual: event.shiftKey })
+                  }
+                }}
                 onMouseEnter={() => targetIndex !== -1 && setActiveIndex(targetIndex)}
                 aria-selected={isActive}
                 className={cn(
@@ -126,8 +134,9 @@ function TargetRow({ targetId, showFolderColor }: { targetId: TargetId; showFold
 
   return (
     <button
-      onClick={() => activateTarget(targetId)}
+      onClick={(event) => { void activateTarget(targetId, { manual: event.shiftKey }) }}
       className="group flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-zinc-800/80"
+      title="Open target. Hold Shift to use the manual AWS switch-role page."
     >
       {folderColor ? (
         <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: folderColor }} />

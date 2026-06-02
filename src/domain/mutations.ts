@@ -4,11 +4,12 @@ import type {
   FolderId,
   MoveNodeDraft,
   NodeId,
+  SwitchRolePreferencesDraft,
   TargetDraft,
   TargetId,
 } from '@/shared/types'
 import { createId, unique } from '@/shared/utils'
-import { appStorageSchema, folderDraftSchema, targetDraftSchema } from '@/domain/schema'
+import { appStorageSchema, folderDraftSchema, switchRolePreferencesDraftSchema, targetDraftSchema } from '@/domain/schema'
 
 function removeNodeFromList(ids: NodeId[], nodeId: NodeId): NodeId[] {
   return ids.filter((id) => id !== nodeId)
@@ -77,6 +78,11 @@ function setParentList(state: AppStorageState, parentId: FolderId | null, ids: N
   }
 }
 
+function normalizeOptionalText(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
 export function toggleFolderExpanded(state: AppStorageState, folderId: FolderId): AppStorageState {
   const expanded = state.ui.expandedFolderIds.includes(folderId)
 
@@ -135,6 +141,23 @@ export function toggleFavorite(state: AppStorageState, targetId: TargetId): AppS
       favoriteTargetIds: exists
         ? state.usage.favoriteTargetIds.filter((id) => id !== targetId)
         : unique([...state.usage.favoriteTargetIds, targetId]),
+    },
+  }
+}
+
+export function updateSwitchRolePreferences(
+  state: AppStorageState,
+  draft: SwitchRolePreferencesDraft,
+): AppStorageState {
+  const parsed = switchRolePreferencesDraftSchema.parse(draft)
+
+  return {
+    ...state,
+    preferences: {
+      ...state.preferences,
+      switchRole: {
+        autoSubmit: parsed.autoSubmit,
+      },
     },
   }
 }
@@ -238,6 +261,8 @@ export function createTarget(state: AppStorageState, draft: TargetDraft): AppSto
           accountAlias: parsed.accountAlias,
           roleName: parsed.roleName,
           destinationPath: parsed.destinationPath,
+          sourceAccount: normalizeOptionalText(parsed.sourceAccount),
+          sourceIdentity: normalizeOptionalText(parsed.sourceIdentity),
         },
       },
     },
@@ -279,6 +304,8 @@ export function updateTarget(state: AppStorageState, targetId: TargetId, draft: 
           accountAlias: parsed.accountAlias,
           roleName: parsed.roleName,
           destinationPath: parsed.destinationPath,
+          sourceAccount: normalizeOptionalText(parsed.sourceAccount),
+          sourceIdentity: normalizeOptionalText(parsed.sourceIdentity),
         },
       },
     },
@@ -472,6 +499,7 @@ export function exportCatalogState(state: AppStorageState): string {
       schemaVersion: state.schemaVersion,
       catalog: state.catalog,
       usage: state.usage,
+      preferences: state.preferences,
     },
     null,
     2,
@@ -491,6 +519,7 @@ export function importCatalogState(state: AppStorageState, raw: string): AppStor
       (parsed as Partial<AppStorageState>)?.schemaVersion ?? state.schemaVersion,
     catalog: (parsed as Partial<AppStorageState>)?.catalog ?? state.catalog,
     usage: (parsed as Partial<AppStorageState>)?.usage ?? state.usage,
+    preferences: (parsed as Partial<AppStorageState>)?.preferences ?? state.preferences,
     ui: {
       expandedFolderIds: [],
       selectedTargetId: null,
@@ -505,6 +534,7 @@ export function importCatalogState(state: AppStorageState, raw: string): AppStor
     schemaVersion: validated.schemaVersion,
     catalog: validated.catalog,
     usage: validated.usage,
+    preferences: validated.preferences,
     ui: {
       ...state.ui,
       expandedFolderIds: [],

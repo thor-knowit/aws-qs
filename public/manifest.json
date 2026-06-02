@@ -9,7 +9,7 @@
     "48": "extension-icon-48.png",
     "128": "extension-icon-128.png"
   },
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "scripting"],
   "host_permissions": [
     "https://signin.aws.amazon.com/*",
     "https://console.aws.amazon.com/*"
