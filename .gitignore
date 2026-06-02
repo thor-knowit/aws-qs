@@ -26,5 +26,6 @@ dist-ssr
 # Extension signing key — NEVER commit
 *.pem
 
-# Packed extension artifact
+# Build artifacts
 *.crx
+aws-qs-unpacked.zip

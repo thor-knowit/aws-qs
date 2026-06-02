@@ -1,0 +1,51 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write          # needed for gh release create/delete + tag move
+
+concurrency:
+  group: release-latest    # serialize pushes racing on the rolling release
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Zip the unpacked extension
+        run: cd dist && zip -r ../aws-qs-unpacked.zip . && cd ..
+
+      - name: Publish rolling "latest" release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest aws-qs-unpacked.zip \
+            --title "Latest build (main)" \
+            --notes "Automated build from \`${GITHUB_SHA::7}\` on $(date -u +'%Y-%m-%d %H:%M UTC'). Download \`aws-qs-unpacked.zip\`, unzip it, then load the unzipped folder via chrome://extensions → enable Developer mode → Load unpacked." \
+            --latest \
+            --target "$GITHUB_SHA"
